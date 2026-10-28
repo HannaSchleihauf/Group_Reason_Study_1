@@ -384,7 +384,8 @@ function videoName(box, team, quality, claimed) {
 function startForm() {
   return new Promise(resolve => {
     clear();
-    const form = add('div', 'form');
+    const page = add('div', 'form-page', document.body);
+    const form = add('div', 'form', page);
     form.innerHTML = `
       <h1>Study 1</h1>
       <label>language <select id="f-lang"><option value="nl">Nederlands</option>
@@ -440,9 +441,18 @@ function startForm() {
         if (p && p.catch) p.catch(() => {});
       } catch (e) { /* fullscreen is optional */ }
       await withTimeout(Sound.init(), 3000);
-      resolve({language: $('f-lang').value, reason_set: $('f-reasons').value,
-               participant: $('f-participant').value.trim(), age: $('f-age').value,
-               gender: $('f-gender').value});
+      const answers = {language: $('f-lang').value, reason_set: $('f-reasons').value,
+                       participant: $('f-participant').value.trim(), age: $('f-age').value,
+                       gender: $('f-gender').value};
+      page.remove();
+      // phones held upright: ask to turn sideways during the task
+      const rotate = add('div', '', document.body);
+      rotate.id = 'rotate';
+      rotate.textContent = 'Draai het scherm een kwartslag (liggend).\n'
+                         + 'Please turn the screen sideways (landscape).';
+      rotate.style.whiteSpace = 'pre-line';
+      document.body.classList.add('running');
+      resolve(answers);
     });
   });
 }
@@ -489,7 +499,10 @@ async function celebrate({x, y, w, h, fade = [], pulse = null, glow = true, dur 
       const on = Math.floor(t / 0.15) % 2 === 0;
       if (glowBox) glowBox.style.opacity = on ? 0.7 : 0.15;
       frame.style.borderColor = on ? '#f5b700' : '#2e7d32';
-      if (pulse) pulse.style.scale = 1 + 0.08 * Math.abs(Math.sin(t * Math.PI / 0.3));
+      if (pulse) {  // transform (not the newer `scale` property): older iPads
+        const f = 1 + 0.08 * Math.abs(Math.sin(t * Math.PI / 0.3));
+        pulse.style.transform = `translate(-50%, -50%) scale(${f})`;
+      }
       if (t * 1000 < dur) requestAnimationFrame(step);
       else resolve();
     };
@@ -652,7 +665,7 @@ class ThoughtBubble {
     if (thought && thought !== 'dont_know') {
       const e = this.animals[thought];
       e.style.display = '';
-      e.style.scale = 0.25 + 0.75 * strength;
+      e.style.transform = `translate(-50%, -50%) scale(${0.25 + 0.75 * strength})`;
       e.style.opacity = 0.15 + 0.85 * strength;  // fades toward the middle
     }
   }

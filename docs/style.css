@@ -15,7 +15,7 @@ html, body {
 }
 #viewport {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -80,17 +80,17 @@ html, body {
   z-index: 50;
 }
 .help-on #help { background: #a3a3a3; color: #ffffff; }
-#help::after { content: ''; position: absolute; inset: -14px; } /* bigger tap area */
+#help::after { content: ''; position: absolute; top: -14px; right: -14px; bottom: -14px; left: -14px; } /* bigger tap area */
 
 svg.layer { position: absolute; left: 0; top: 0; width: 1366px; height: 1024px; pointer-events: none; overflow: visible; }
 
 .hit { position: absolute; transform: translate(-50%, -50%); cursor: pointer; }
 
 .shake { animation: shake 0.6s linear; }
-@keyframes shake {
-  0%, 100% { translate: 0 0; }
-  10%, 30%, 50%, 70%, 90% { translate: -15px 0; }
-  20%, 40%, 60%, 80% { translate: 15px 0; }
+@keyframes shake {  /* margin, so it combines with the centring transform */
+  0%, 100% { margin-left: 0; }
+  10%, 30%, 50%, 70%, 90% { margin-left: -15px; }
+  20%, 40%, 60%, 80% { margin-left: 15px; }
 }
 .faded { opacity: 0.25; }
 
@@ -103,14 +103,41 @@ svg.layer { position: absolute; left: 0; top: 0; width: 1366px; height: 1024px; 
 .play::after { content: ''; position: absolute; left: 46px; top: 31px; border-style: solid;
                border-width: 31px 0 31px 53px; border-color: transparent transparent transparent #ffffff; }
 
-/* start form (experimenter) */
-.form { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        width: 620px; font-size: 22px; color: #333333; }
-.form h1 { font-size: 30px; margin: 0 0 24px; }
-.form label { display: flex; align-items: center; justify-content: space-between; margin: 14px 0; }
-.form select, .form input { font-size: 22px; width: 330px; padding: 6px 8px; border: 1px solid #999999;
-                            border-radius: 8px; background: #ffffff; -webkit-user-select: text;
-                            user-select: text; touch-action: auto; }
-.form .note { font-size: 17px; color: #777777; margin-top: 22px; line-height: 1.4; }
+/* start form (experimenter): shown at normal size on any screen (phones
+   too), outside the scaled stage */
+.form-page { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow-y: auto;
+             -webkit-overflow-scrolling: touch; background: #ffffff; z-index: 60;
+             -webkit-user-select: auto; user-select: auto; -webkit-touch-callout: default;
+             display: flex; justify-content: center; align-items: center;
+             padding: max(16px, env(safe-area-inset-top, 0px))
+                      max(16px, env(safe-area-inset-right, 0px))
+                      max(16px, env(safe-area-inset-bottom, 0px))
+                      max(16px, env(safe-area-inset-left, 0px));
+             touch-action: auto; }
+.form { width: min(560px, 100%); font-size: 18px; color: #333333; margin: auto; }
+.form h1 { font-size: 26px; margin: 0 0 20px; }
+.form label { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+              gap: 6px 16px; margin: 12px 0; }
+.form select, .form input { font-size: 17px; /* 16 px or more: iPhones don't zoom in */
+                            width: min(300px, 100%); min-height: 44px; padding: 6px 10px;
+                            border: 1px solid #999999; border-radius: 8px; background: #ffffff;
+                            color: #111111; -webkit-user-select: text; user-select: text;
+                            touch-action: auto; }
+.form *, .form-page { box-sizing: border-box; }
+@media (max-width: 520px) {  /* narrow screens: label above its box */
+  .form label { flex-direction: column; align-items: stretch; }
+  .form select, .form input { width: 100%; }
+}
+.form .note { font-size: 15px; color: #777777; margin-top: 20px; line-height: 1.45; }
 .form .note a { color: #555555; }
-.form .start { position: relative; transform: none; margin-top: 26px; display: inline-flex; }
+.form .start { position: static; transform: none; margin-top: 22px; display: inline-flex;
+               min-width: 120px; }
+
+/* during the task, phones held upright are asked to turn sideways */
+#rotate { display: none; }
+@media (orientation: portrait) and (max-width: 700px) {
+  .running #rotate { display: flex; position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+                     z-index: 70; background: #ffffff;
+                     align-items: center; justify-content: center; text-align: center;
+                     padding: 24px; font-size: 22px; color: #333333; line-height: 1.5; }
+}
