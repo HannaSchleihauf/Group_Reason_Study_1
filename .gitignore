@@ -1,0 +1,8 @@
+# Children's data never go into the repository
+Study1_PsychoPy/data/
+# Local files
+.DS_Store
+__pycache__/
+*.pyc
+*.gvid
+Study1_Web_hostinger.zip
