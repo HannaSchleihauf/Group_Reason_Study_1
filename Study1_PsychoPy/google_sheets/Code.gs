@@ -1,6 +1,9 @@
 /**
- * Study 1 - receives the data rows from the PsychoPy task (sheets_sync.py)
- * and appends them to the sheet "data".
+ * Study 1 - receives the data rows from the task (web version: data.js;
+ * PsychoPy version: sheets_sync.py) and appends them to the sheet "data".
+ * Both versions can use the same sheet. For the web version, doGet also
+ * tells the page which counterbalancing lists completed sessions used
+ * (all devices).
  *
  * Setup (once):
  *  1. Make a new Google Sheet (e.g. in the lab's Google Drive).
@@ -10,9 +13,10 @@
  *       Execute as: Me
  *       Who has access: Anyone
  *     Deploy, allow access, and copy the web app URL.
- *  4. In sheets_sync.py, set SHEETS_URL to that URL and SHEETS_TOKEN to the
- *     same password as TOKEN.
- *  5. Check: python sheets_sync.py --test  -> a row "connection_test" appears.
+ *  4. In data.js (web) and/or sheets_sync.py (PsychoPy), set SHEETS_URL to
+ *     that URL and SHEETS_TOKEN to the same password as TOKEN.
+ *  5. Check: open <URL>?action=sessions&token=<TOKEN> in a browser; it should
+ *     show {"ok":true,"sessions":[...]}.
  *  After changing this code later: Deploy > Manage deployments > edit >
  *  Version: New version (the URL stays the same).
  *
@@ -22,7 +26,7 @@
  * (no duplicates when a row is sent twice; at the end of a session the task
  * sends its rows again with session_duration_min filled in).
  */
-const TOKEN = 'change-me';  // same as SHEETS_TOKEN in sheets_sync.py
+const TOKEN = 'gr1-DRnGec7JMVaGtnF0';  // same as SHEETS_TOKEN in data.js / sheets_sync.py
 const SHEET_NAME = 'data';
 
 function doPost(e) {
@@ -76,4 +80,28 @@ function doPost(e) {
 function reply(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
       .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Completed sessions per participant and date (age, cb_list, number of
+// trials), for the counterbalancing of the web version.
+function doGet(e) {
+  const p = e.parameter || {};
+  if (p.token !== TOKEN) return reply({ok: false, error: 'wrong token'});
+  if (p.action !== 'sessions') return reply({ok: false, error: 'unknown action'});
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return reply({ok: true, sessions: []});
+  const values = sheet.getDataRange().getValues();
+  const header = values[0];
+  const col = name => header.indexOf(name);
+  const sessions = {};
+  values.slice(1).forEach(row => {
+    const key = row[col('participant')] + '_' + row[col('date')];
+    if (!sessions[key]) {
+      const age = col('age') >= 0 ? row[col('age')] : row[col('age_group')];
+      sessions[key] = {participant: String(row[col('participant')]), age: String(age),
+                       cb_list: row[col('cb_list')], n: 0};
+    }
+    sessions[key].n++;
+  });
+  return reply({ok: true, sessions: Object.values(sessions)});
 }

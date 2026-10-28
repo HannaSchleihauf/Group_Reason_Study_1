@@ -31,8 +31,8 @@ import threading
 import time
 import urllib.request
 
-SHEETS_URL = ''  # web app URL of google_sheets/Code.gs ('' = save locally only)
-SHEETS_TOKEN = 'change-me'  # must be the same as TOKEN in Code.gs
+SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzzN_G9ErWAEyIwp_fOTM-Pet0r_fDPSmObklQNO1BFFecUFLM3kfzjb7HxQud1lEqpzA/exec'  # web app URL of google_sheets/Code.gs ('' = save locally only)
+SHEETS_TOKEN = 'gr1-DRnGec7JMVaGtnF0'  # must be the same as TOKEN in Code.gs
 RETRY_SECONDS = 30
 
 OUTBOX = Path(__file__).resolve().parent / 'data' / 'outbox'

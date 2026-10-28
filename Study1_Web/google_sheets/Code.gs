@@ -26,7 +26,7 @@
  * (no duplicates when a row is sent twice; at the end of a session the task
  * sends its rows again with session_duration_min filled in).
  */
-const TOKEN = 'change-me';  // same as SHEETS_TOKEN in data.js / sheets_sync.py
+const TOKEN = 'gr1-DRnGec7JMVaGtnF0';  // same as SHEETS_TOKEN in data.js / sheets_sync.py
 const SHEET_NAME = 'data';
 
 function doPost(e) {
