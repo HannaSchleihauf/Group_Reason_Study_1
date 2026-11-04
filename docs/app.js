@@ -392,7 +392,10 @@ function startForm() {
         <option value="en">English</option></select></label>
       <label>reasons (video version) <select id="f-reasons"><option>numeric</option>
         <option>quality</option></select></label>
-      <label>participant <input id="f-participant" autocomplete="off"></label>
+      <label>participant <input id="f-participant" readonly value="..."></label>
+      <div class="note" id="f-source"></div>
+      <label class="check"><input type="checkbox" id="f-test">
+        test run (participant "test", not counted)</label>
       <label>age <select id="f-age"><option value="" selected disabled>choose</option>
         ${CFG.AGES.map(a => `<option>${a}</option>`).join('')}</select></label>
       <label>gender <select id="f-gender"><option value=""></option><option>female</option>
@@ -401,7 +404,27 @@ function startForm() {
       <div class="note" id="f-note"></div>`;
     const $ = id => form.querySelector(`#${id}`);
     const start = $('f-start');
-    $('f-age').addEventListener('change', () => setEnabled(start, $('f-age').value !== ''));
+    // participant number: counted up automatically (sheet, else this device)
+    let localMax = 0, preview = null;
+    const updateStart = () => setEnabled(start, $('f-age').value !== '' && preview !== null);
+    const showParticipant = () => {
+      $('f-participant').value = $('f-test').checked ? 'test' : (preview === null ? '...' : preview);
+    };
+    $('f-test').addEventListener('change', showParticipant);
+    (async () => {
+      localMax = await Data.localMaxParticipant();
+      const fromSheet = await Data.nextParticipant(localMax);
+      preview = fromSheet || localMax + 1;
+      const source = $('f-source');
+      source.textContent = fromSheet
+        ? 'counted up from the Google Sheet (all devices)'
+        : 'No connection to the Google Sheet: counted from this device only. '
+          + 'Check that no other device has used this number.';
+      if (!fromSheet) source.classList.add('warn');
+      showParticipant();
+      updateStart();
+    })();
+    $('f-age').addEventListener('change', updateStart);
 
     const rows = Data.allRows();
     const note = $('f-note');
@@ -440,9 +463,13 @@ function startForm() {
         const p = fullscreen && fullscreen.call(root);
         if (p && p.catch) p.catch(() => {});
       } catch (e) { /* fullscreen is optional */ }
-      await withTimeout(Sound.init(), 3000);
+      // take the number in the sheet, so no other device gets it too
+      const [, reserved] = await Promise.all([
+        withTimeout(Sound.init(), 3000),
+        $('f-test').checked ? null : withTimeout(Data.nextParticipant(localMax, true), 10000, null)]);
+      const participant = $('f-test').checked ? 'test' : String(reserved || preview);
       const answers = {language: $('f-lang').value, reason_set: $('f-reasons').value,
-                       participant: $('f-participant').value.trim(), age: $('f-age').value,
+                       participant, age: $('f-age').value,
                        gender: $('f-gender').value};
       page.remove();
       // phones held upright: ask to turn sideways during the task

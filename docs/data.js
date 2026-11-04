@@ -8,6 +8,8 @@
 //    there is a connection again (and every RETRY_SECONDS while the page is
 //    open, and when the page is opened again).
 // With SHEETS_URL empty, data are only kept on the device.
+// The sheet also hands out the participant numbers (nextParticipant), so
+// that all devices and the PsychoPy version count up together.
 //
 // Published as a claude.ai page, the page cannot reach Google; instead rows
 // go to the page's own database (the `db` capability), which only the owner
@@ -200,6 +202,56 @@ const Data = {
     window.addEventListener('online', () => this.send());
   },
 
+  // GET request to the sheet's web app; the JSON answer, or null.
+  async sheetGet(params, timeoutMs = 5000) {
+    if (!SHEETS_URL || !navigator.onLine) return null;
+    const query = Object.entries(Object.assign({token: SHEETS_TOKEN}, params))
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(`${SHEETS_URL}?${query}`, {signal: controller.signal});
+      return await response.json();
+    } catch (e) {
+      return null;  // no internet, timeout, or no JSON answer
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+
+  // Highest participant number in the rows on this device and (claude.ai)
+  // in the page's database; IDs that are not numbers (test) are skipped.
+  async localMaxParticipant() {
+    const ids = this.allRows().map(r => r.participant);
+    if (this.db) {
+      try {
+        const snap = await Promise.race([
+          this.db.collection('sessions').limit(1000).get(),
+          new Promise((resolve, reject) => setTimeout(() => reject(new Error('timeout')), 4000))]);
+        snap.docs.forEach(d => ids.push(d.data().participant));
+      } catch (e) { /* this device only */ }
+    }
+    return ids.map(id => String(id).trim()).filter(id => /^\d+$/.test(id))
+      .reduce((highest, id) => Math.max(highest, Number(id)), 0);
+  },
+
+  // Next participant number from the sheet: one more than the highest number
+  // in the sheet, handed out before, or localMax. With `reserve` the number
+  // is taken. null if the sheet cannot be reached.
+  async nextParticipant(localMax, reserve = false) {
+    const answer = await this.sheetGet({action: 'next', min: localMax, reserve: reserve ? 1 : 0},
+                                       8000);
+    if (answer && answer.ok) return Number(answer.participant);
+    // older Code.gs without action=next: the highest number in the sheet
+    const sessions = await this.sheetGet({action: 'sessions'});
+    if (sessions && sessions.ok) {
+      return sessions.sessions.map(s => String(s.participant).trim())
+        .filter(id => /^\d+$/.test(id))
+        .reduce((highest, id) => Math.max(highest, Number(id)), localMax) + 1;
+    }
+    return null;
+  },
+
   // Completed sessions (all trials) for counterbalancing: from the sheet if
   // it can be reached (all devices), otherwise from this device.
   async completedSessions() {
@@ -211,18 +263,8 @@ const Data = {
         if (snap.size) return {source: 'db', sessions: snap.docs.map(d => d.data())};
       } catch (e) { /* fall back */ }
     }
-    if (SHEETS_URL && navigator.onLine) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(
-          `${SHEETS_URL}?action=sessions&token=${encodeURIComponent(SHEETS_TOKEN)}`,
-          {signal: controller.signal});
-        clearTimeout(timer);
-        const answer = await response.json();
-        if (answer.ok) return {source: 'sheet', sessions: answer.sessions};
-      } catch (e) { /* fall back to this device */ }
-    }
+    const answer = await this.sheetGet({action: 'sessions'});
+    if (answer && answer.ok) return {source: 'sheet', sessions: answer.sessions};
     const bySession = {};
     this.allRows().forEach(r => {
       const key = `${r.participant}_${r.date}`;

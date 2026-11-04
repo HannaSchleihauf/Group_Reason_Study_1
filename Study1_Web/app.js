@@ -466,7 +466,7 @@ function startForm() {
       // take the number in the sheet, so no other device gets it too
       const [, reserved] = await Promise.all([
         withTimeout(Sound.init(), 3000),
-        $('f-test').checked ? null : Data.nextParticipant(localMax, true)]);
+        $('f-test').checked ? null : withTimeout(Data.nextParticipant(localMax, true), 10000, null)]);
       const participant = $('f-test').checked ? 'test' : String(reserved || preview);
       const answers = {language: $('f-lang').value, reason_set: $('f-reasons').value,
                        participant, age: $('f-age').value,

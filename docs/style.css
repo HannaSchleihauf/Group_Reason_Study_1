@@ -130,6 +130,11 @@ svg.layer { position: absolute; left: 0; top: 0; width: 1366px; height: 1024px; 
 }
 .form .note { font-size: 15px; color: #777777; margin-top: 20px; line-height: 1.45; }
 .form .note a { color: #555555; }
+.form #f-participant { background: #eeeeee; font-weight: bold; }
+.form #f-source { margin-top: -6px; text-align: right; }
+.form #f-source.warn { color: #c05000; }
+.form label.check { justify-content: flex-start; flex-direction: row; align-items: center; }
+.form label.check input { width: 26px; min-height: 26px; height: 26px; margin: 0; }
 .form .start { position: static; transform: none; margin-top: 22px; display: inline-flex;
                min-width: 120px; }
 
