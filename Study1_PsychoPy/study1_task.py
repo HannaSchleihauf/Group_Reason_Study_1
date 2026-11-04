@@ -7,7 +7,8 @@ Study 1 - Belief revision tablet task (PsychoPy Coder script)
 Procedure per session
 
   0. Start dialog: language (Dutch/English), reasons (numeric/quality video
-     version), participant, age (3-10), gender.
+     version), age (3-10), gender. The participant number is counted up
+     automatically (see Data); "test run" uses the participant ID "test".
   1. Group choice: the child picks the Moon or the Sun team (the chosen
      picture blinks with a happy sound). Right away both teams are shown
      (stimuli/teams/, order random: teams_pic_top) while the child gets the
@@ -112,6 +113,12 @@ Expected folder structure (next to this script)
 
 Data
   data/<participant>_<date>.csv  - one row per trial, written after every trial.
+  Participant numbers count up automatically: the Google Sheet hands out the
+  next number when OK is pressed (one more than the highest number in the
+  sheet, given out before, or in data/), so all computers and the web
+  version count up together. Without internet the number is one more than
+  the highest in data/ (the dialog then says so: check that no other device
+  used it).
   Each row is also sent to a Google Sheet (see sheets_sync.py and
   google_sheets/Code.gs). Without internet the rows wait in data/outbox/ and
   are sent as soon as there is a connection (the task retries while it runs
@@ -592,11 +599,30 @@ def video_path(box, team, quality, claimed_animal, lang, reason_set):
 # --------------------------------------------------------------------------
 # Session info and counterbalancing
 # --------------------------------------------------------------------------
+def local_max_participant():
+    """Highest participant number in data/ (IDs that are not numbers, such as
+    test, are skipped)."""
+    highest = 0
+    for path in DATA_DIR.glob('*.csv'):
+        try:
+            with open(path, newline='', encoding='utf-8') as f:
+                pid = next(csv.DictReader(f))['participant'].strip()
+        except (OSError, StopIteration, KeyError, ValueError):
+            pid = path.name.split('_')[0]
+        if pid.isdigit():
+            highest = max(highest, int(pid))
+    return highest
+
+
 def session_dialog():
     """Start dialog. Returns the info dict, or None if cancelled."""
     from PyQt6 import QtWidgets
     from psychopy.gui import qtgui
     qtgui.ensureQtApp()
+
+    local_max = local_max_participant()
+    from_sheet = sheets_sync.next_participant(local_max)
+    preview = from_sheet or local_max + 1
 
     dlg = QtWidgets.QDialog()
     dlg.setWindowTitle('Study 1')
@@ -607,7 +633,17 @@ def session_dialog():
     language.addItems(['Nederlands', 'English'])
     reason_set = QtWidgets.QComboBox()
     reason_set.addItems(['numeric', 'quality'])
-    participant = QtWidgets.QLineEdit()
+    participant = QtWidgets.QLineEdit(str(preview))
+    participant.setReadOnly(True)  # counted up automatically
+    participant.setStyleSheet('font-weight: bold; background: #eeeeee')
+    source = QtWidgets.QLabel(
+        'counted up from the Google Sheet (all devices)' if from_sheet else
+        'No connection to the Google Sheet: counted from this computer only.\n'
+        'Check that no other device has used this number.')
+    source.setStyleSheet('color: grey' if from_sheet else 'color: #c05000')
+    test_run = QtWidgets.QCheckBox('test run (participant "test", not counted)')
+    test_run.toggled.connect(
+        lambda on: participant.setText('test' if on else str(preview)))
     age = QtWidgets.QComboBox()
     age.addItems(AGES)
     age.setPlaceholderText('choose')
@@ -618,6 +654,8 @@ def session_dialog():
     form.addRow('language', language)
     form.addRow('reasons (video version)', reason_set)
     form.addRow('participant', participant)
+    form.addRow('', source)
+    form.addRow('', test_run)
     form.addRow('age', age)
     form.addRow('gender', gender)
 
@@ -635,9 +673,13 @@ def session_dialog():
     dlg.activateWindow()
     if not dlg.exec():
         return None
+    if test_run.isChecked():
+        pid = 'test'
+    else:  # take the number in the sheet, so no other device gets it too
+        pid = str(sheets_sync.next_participant(local_max, reserve=True) or preview)
     return {'language': ['nl', 'en'][language.currentIndex()],
             'reason_set': reason_set.currentText(),
-            'participant': participant.text().strip(),
+            'participant': pid,
             'age': age.currentText(),
             'gender': gender.currentText()}
 

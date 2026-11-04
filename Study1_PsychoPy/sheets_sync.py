@@ -20,6 +20,9 @@ twice (e.g. the connection dropped before the confirmation arrived) appears
 once; at the end of a session the rows are sent again with
 session_duration_min filled in.
 
+The sheet also hands out the participant numbers (next_participant), so
+that all computers and the web version count up together.
+
 Setup: see google_sheets/Code.gs. With SHEETS_URL empty, data are only saved
 locally.
 """
@@ -29,6 +32,7 @@ import json
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 
 SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzzN_G9ErWAEyIwp_fOTM-Pet0r_fDPSmObklQNO1BFFecUFLM3kfzjb7HxQud1lEqpzA/exec'  # web app URL of google_sheets/Code.gs ('' = save locally only)
@@ -81,6 +85,34 @@ def send_pending(timeout=10):
         return len(pending())
     finally:
         _sending.release()
+
+
+def _get(params, timeout):
+    """GET request to the web app; returns the JSON answer, or None."""
+    query = urllib.parse.urlencode({'token': SHEETS_TOKEN, **params})
+    try:
+        with urllib.request.urlopen(f'{SHEETS_URL}?{query}', timeout=timeout) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except (OSError, ValueError):  # no internet, timeout, or no JSON answer
+        return None
+
+
+def next_participant(local_max, reserve=False, timeout=8):
+    """Next participant number from the sheet: one more than the highest
+    number in the sheet, handed out before, or local_max (the highest number
+    on this computer). With reserve the number is taken. Returns None if the
+    sheet cannot be reached."""
+    if not SHEETS_URL:
+        return None
+    answer = _get({'action': 'next', 'min': local_max, 'reserve': int(reserve)}, timeout)
+    if answer and answer.get('ok'):
+        return int(answer['participant'])
+    # older Code.gs without action=next: the highest number in the sheet
+    answer = _get({'action': 'sessions'}, timeout)
+    if answer and answer.get('ok'):
+        ids = [str(s.get('participant', '')).strip() for s in answer['sessions']]
+        return max([local_max] + [int(i) for i in ids if i.isdigit()]) + 1
+    return None
 
 
 def send_in_background():

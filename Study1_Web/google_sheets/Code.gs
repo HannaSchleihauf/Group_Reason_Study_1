@@ -1,9 +1,10 @@
 /**
  * Study 1 - receives the data rows from the task (web version: data.js;
  * PsychoPy version: sheets_sync.py) and appends them to the sheet "data".
- * Both versions can use the same sheet. For the web version, doGet also
- * tells the page which counterbalancing lists completed sessions used
- * (all devices).
+ * Both versions can use the same sheet. doGet also tells the task which
+ * counterbalancing lists completed sessions used (all devices), and hands
+ * out the participant numbers (action=next), so that all devices and both
+ * versions count up together.
  *
  * Setup (once):
  *  1. Make a new Google Sheet (e.g. in the lab's Google Drive).
@@ -16,7 +17,8 @@
  *  4. In data.js (web) and/or sheets_sync.py (PsychoPy), set SHEETS_URL to
  *     that URL and SHEETS_TOKEN to the same password as TOKEN.
  *  5. Check: open <URL>?action=sessions&token=<TOKEN> in a browser; it should
- *     show {"ok":true,"sessions":[...]}.
+ *     show {"ok":true,"sessions":[...]}, and <URL>?action=next&token=<TOKEN>
+ *     should show {"ok":true,"participant":<next number>}.
  *  After changing this code later: Deploy > Manage deployments > edit >
  *  Version: New version (the URL stays the same).
  *
@@ -82,26 +84,61 @@ function reply(obj) {
       .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Completed sessions per participant and date (age, cb_list, number of
-// trials), for the counterbalancing of the web version.
 function doGet(e) {
   const p = e.parameter || {};
   if (p.token !== TOKEN) return reply({ok: false, error: 'wrong token'});
-  if (p.action !== 'sessions') return reply({ok: false, error: 'unknown action'});
+  if (p.action === 'sessions') return reply({ok: true, sessions: sessions()});
+  if (p.action === 'next') return reply(nextParticipant(Number(p.min) || 0, p.reserve === '1'));
+  return reply({ok: false, error: 'unknown action'});
+}
+
+// All rows of the sheet as objects (column name -> value).
+function sheetRows() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  if (!sheet || sheet.getLastRow() < 2) return reply({ok: true, sessions: []});
+  if (!sheet || sheet.getLastRow() < 2) return [];
   const values = sheet.getDataRange().getValues();
   const header = values[0];
-  const col = name => header.indexOf(name);
-  const sessions = {};
-  values.slice(1).forEach(row => {
-    const key = row[col('participant')] + '_' + row[col('date')];
-    if (!sessions[key]) {
-      const age = col('age') >= 0 ? row[col('age')] : row[col('age_group')];
-      sessions[key] = {participant: String(row[col('participant')]), age: String(age),
-                       cb_list: row[col('cb_list')], n: 0};
-    }
-    sessions[key].n++;
+  return values.slice(1).map(row => {
+    const obj = {};
+    header.forEach((name, i) => { obj[name] = row[i]; });
+    return obj;
   });
-  return reply({ok: true, sessions: Object.values(sessions)});
+}
+
+// Completed sessions per participant and date (age, cb_list, number of
+// trials), for the counterbalancing.
+function sessions() {
+  const bySession = {};
+  sheetRows().forEach(row => {
+    const key = row.participant + '_' + row.date;
+    if (!bySession[key]) {
+      const age = row.age !== undefined ? row.age : row.age_group;
+      bySession[key] = {participant: String(row.participant), age: String(age),
+                        cb_list: row.cb_list, n: 0};
+    }
+    bySession[key].n++;
+  });
+  return Object.values(bySession);
+}
+
+// Next participant number: one more than the highest number in the sheet,
+// the highest number handed out before (also for sessions that have not
+// sent a row yet) and `min` (the highest number the device knows of).
+// With `reserve` the number is taken, so the next device gets the one after.
+function nextParticipant(min, reserve) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let highest = Math.max(min, Number(props.getProperty('last_participant')) || 0);
+    sheetRows().forEach(row => {
+      const id = String(row.participant).trim();
+      if (/^\d+$/.test(id)) highest = Math.max(highest, Number(id));
+    });
+    const next = highest + 1;
+    if (reserve) props.setProperty('last_participant', String(next));
+    return {ok: true, participant: next};
+  } finally {
+    lock.releaseLock();
+  }
 }
