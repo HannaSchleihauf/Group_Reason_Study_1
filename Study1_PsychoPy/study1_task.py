@@ -1399,18 +1399,15 @@ def rating_scale(animal_left, animal_right, header, button_text, first=None,
             skip.draw()
         draw_help(script)
 
-    def feedback(right):
-        """Practice: chime and green marker, or 'oops' and a red shaking marker."""
-        player = play_sound(SOUND_CORRECT if right else SOUND_WRONG)
-        shown = core.Clock()
-        while shown.getTime() < 0.8:
-            check_quit()
-            t = shown.getTime()
-            draw_screen('#2e9d4a' if right else '#d93025',
-                        0 if right else 0.012 * math.sin(t * 40) * (t < 0.5))
-            win.flip()
-        if player:
-            player.close_player()
+  def feedback(right):
+    """Practice: green/red marker feedback without sound."""
+    shown = core.Clock()
+    while shown.getTime() < 0.8:
+        check_quit()
+        t = shown.getTime()
+        draw_screen('#2e9d4a' if right else '#d93025',
+                    0 if right else 0.012 * math.sin(t * 40) * (t < 0.5))
+        win.flip()
 
     wait_release()
     clock = core.Clock()
