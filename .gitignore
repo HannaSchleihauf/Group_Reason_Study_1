@@ -9,5 +9,3 @@ __pycache__/
 *.pyc
 *.gvid
 *_hostinger.zip
-# Original Study 2 recordings (2 GB); the web copies are in Study2_Web/media/videos
-Study2/video_stimuli/

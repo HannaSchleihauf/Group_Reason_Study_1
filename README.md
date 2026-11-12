@@ -85,9 +85,11 @@ in the browser and prints an address that an iPad on the same Wi-Fi can use.
 Stop it with Ctrl+C. Tick "test run" on the start form, so the session is not
 counted.
 
-**Publishing (GitHub Pages).** GitHub Pages serves the `docs/` folder at the
-top of the repository: Study 1 at the top of the site, Study 2 in
-`docs/study2`. After changing anything here, run
+**Publishing (GitHub Pages).** This folder is the git repository
+`HannaSchleihauf/Group_Reason_Study_1`. GitHub Pages serves its `docs/`
+folder (Settings > Pages: branch `master`, folder `/docs`) at
+https://hannaschleihauf.github.io/Group_Reason_Study_1/. After changing
+anything in `Study1_Web`, run
 
     sh tools/make_site_folder.sh
 
