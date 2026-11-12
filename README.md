@@ -30,8 +30,9 @@ All commands below are run from the `Study1_Web` folder.
    then the **liking check** (really like … really not like) with the same two
    members.
 4. **4 trials**, one animal pair each:
-   - setup; in the first trial, the game introduction and scale practice;
-   - the experimenter opens the leftmost box and shows the animal;
+   - setup; in the first trial, the game introduction and scale practice
+     (really / kind of more of each animal, and don't know);
+   - the experimenter opens the fifth box from the left and shows the animal;
    - **initial belief** (which animal, then how sure);
    - **one video**: the child's own team or the other team claims the animal
      the child did *not* choose, with a strong or a weak reason;
@@ -42,8 +43,10 @@ All commands below are run from the `Study1_Web` folder.
    animal is always in most of them.
 6. **End screen**: the child picks a sticker; the data can be downloaded as CSV.
 
-The **(i)** button (top left) shows what to say on each screen. On a video
-screen, the **s** key skips to the end of the video (for testing).
+The **(i)** button (top left) shows what to say on each screen. The **←**
+button under it goes back one screen (web version): the answers given on the
+screens since then are undone, and a trial done again replaces its data row.
+On a video screen, the **s** key skips to the end of the video (for testing).
 
 ## Design and counterbalancing
 

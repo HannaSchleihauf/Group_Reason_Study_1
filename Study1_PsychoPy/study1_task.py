@@ -34,13 +34,17 @@ Procedure per session
           child's bubble shows the animal the marker points to, larger and
           more solid the closer it is to that end, "?" in the middle), then the
           child shows where the marker goes for "really more <left animal>",
-          "really more <right animal>" and "don't know" (a thinking child with
-          that animal or "?" in a thought bubble). Right answers (outer half
-          of that side / within PRACTICE_MIDDLE of the middle) get a chime;
-          wrong ones an 'oops' sound and the child tries again (skip button
+          "kind of more <left animal>", the same two for the right animal,
+          and "don't know" (a thinking child with that animal - full size for
+          "really", small and faint for "kind of" - or "?" in a thought
+          bubble). Right answers (really: outer half of that side; kind of:
+          inner half of that side, outside the middle; don't know: within
+          PRACTICE_MIDDLE of the middle) turn the marker green, without a
+          sound; wrong ones turn it red and the child tries again (skip button
           for the experimenter after PRACTICE_SKIP_AFTER wrong answers).
           Data: practice_<item> (final position), _first (first answer),
-          _attempts, _correct for really_left, really_right, dont_know
+          _attempts, _correct for really_left, kind_of_left, really_right,
+          kind_of_right, dont_know
        b. Initial belief: first a binary choice ("Which animal do you think
           there are more of?" - the child taps one of the two animals), then
           the scale appears below the same animals ("How sure are you?").
@@ -101,8 +105,8 @@ Experimenter text
 Expected folder structure (next to this script)
   stimuli/groups/moon.png, sun.png
   stimuli/sounds/team_chosen.m4a  (happy sound when the child picks / finds their team)
-  stimuli/sounds/wrong.m4a        (child taps the other team / wrong practice answer)
-  stimuli/sounds/correct.m4a      (right practice answer)
+  stimuli/sounds/wrong.m4a        (child taps the other team)
+  stimuli/sounds/correct.m4a      (solution screen: a row of boxes opened)
   stimuli/members/<team>_<female|male>.png  (stills from the videos)
   stimuli/thinking/child.png, bubble.png  (thinking child on the scale screens)
   stimuli/reasons/looked.png, told.png    (check question, quality version)
@@ -179,6 +183,7 @@ BOXES = {  # box colour -> animal pair, in the order of the video label list
 }
 BOX_ORDER = list(BOXES)
 N_BOXES = 10  # boxes of one colour per trial
+OPEN_BOX = 5  # the box the experimenter opens in each trial (counted from the left)
 BOX_DISPLAY = {'blue': '#2b2f8c', 'red': '#e2462c',  # as the boxes in the videos
                'green': '#4f97a3', 'yellow': '#f3c623'}
 N_STICKERS = 5  # stickers the child distributes between the two team members
@@ -186,10 +191,11 @@ LIKING = ['really_like', 'kind_of_like', 'kind_of_not_like', 'really_not_like']
 LIKING_SCORE = {'really_like': 4, 'kind_of_like': 3, 'kind_of_not_like': 2,
                 'really_not_like': 1}  # liking_own / liking_other in the data
 SOUND_TEAM = STIM / 'sounds' / 'team_chosen.m4a'  # stereo AAC (mono WAV does not play)
-SOUND_WRONG = STIM / 'sounds' / 'wrong.m4a'  # other team tapped / wrong practice answer
-SOUND_CORRECT = STIM / 'sounds' / 'correct.m4a'  # right practice answer
+SOUND_WRONG = STIM / 'sounds' / 'wrong.m4a'  # other team tapped
+SOUND_CORRECT = STIM / 'sounds' / 'correct.m4a'  # solution screen: a row of boxes opened
 PRACTICE_MIDDLE = 0.1  # practice "don't know": right if this close to the middle (-1..1)
 PRACTICE_SKIP_AFTER = 3  # wrong practice answers before the experimenter can skip
+PRACTICE_KIND_OF_STRENGTH = 0.3  # practice "kind of": animal size/solidity in the bubble (0..1)
 BUBBLE_IN_TEST = False  # True: thinking child (as in the practice) also on the test sliders
 MIDDLE_SNAP = 0.02  # scale positions this close to the middle (-1..1) snap to it
 CHECK_FADED_OPACITY = 0.25  # check screen: the questions not being asked right now
@@ -309,7 +315,8 @@ EXP_TEXT = {
                            '[hold up the {r}]." [let the child name both animals]\n'
                            '"Your job will be to figure out whether there are more '
                            '{pl_l} or more {pl_r} in the boxes. Each one of these '
-                           'boxes has an animal in it, either {a_l} or {a_r}."',
+                           'boxes has an animal in it, either {a_l} or {a_r}.'
+                           ' I don\'t know whether there are more {pl_l} or more {pl_r} in the boxes."',
         'setup': 'Round {t} of {n}\n\nClear away the boxes, logo and toy animals of '
                  'the last round. Put the {k} {color} boxes in front of the child and '
                  'introduce the two animals ({pl_l} / {pl_r}).',
@@ -317,7 +324,8 @@ EXP_TEXT = {
                      '[hold up the {l}] and {pl_r} [hold up the {r}] in them." [let the '
                      'child name both animals]\n'
                      '"Each box has either {a_l} or {a_r} in it. Your job is to figure '
-                     'out whether there are more {pl_l} or more {pl_r}."',
+                     'out whether there are more {pl_l} or more {pl_r}.'
+                     ' I don\'t know whether there are more {pl_l} or more {pl_r} in the boxes."',
         'train_demo': 'Practice with the scale (first round only): show the child how '
                       'the scale works, then give them the tablet and tap Continue.',
         'train_demo_say': '"Later, I will ask you what you think about the boxes, and '
@@ -328,20 +336,28 @@ EXP_TEXT = {
                           '[middle of the {l} side]." [the same for the {pl_r}]\n'
                           '"And if you don\'t know, you can place your marker here." '
                           '[the middle, where the ? appears]',
-        'train_left': 'Practice 1 of 3: the child shows where the marker goes if they '
+        'train_left': 'Practice 1 of 5: the child shows where the marker goes if they '
                       'really think there are more {pl_l}. Continue checks the answer; '
                       'if it is wrong, the child tries again.',
         'train_left_say': '"Okay, so later when I ask you, if you really thought there '
                           'were more {pl_l}, where would you place your marker?"',
-        'train_right': 'Practice 2 of 3: ... if they really think there are more '
+        'train_left_kind': 'Practice 2 of 5: ... if they kind of think there are more '
+                           '{pl_l} (the half of the {l} side next to the middle).',
+        'train_left_kind_say': '"Good, and if you kind of thought there were more '
+                               '{pl_l}, where would you place your marker?"',
+        'train_right': 'Practice 3 of 5: ... if they really think there are more '
                        '{pl_r}.',
         'train_right_say': '"Good, and if you really thought there were more {pl_r}, '
                            'where would you place your marker?"',
-        'train_middle': "Practice 3 of 3: ... if they don't know.",
+        'train_right_kind': 'Practice 4 of 5: ... if they kind of think there are more '
+                            '{pl_r} (the half of the {r} side next to the middle).',
+        'train_right_kind_say': '"Good, and if you kind of thought there were more '
+                                '{pl_r}, where would you place your marker?"',
+        'train_middle': "Practice 5 of 5: ... if they don't know.",
         'train_middle_say': '"Good, and if you didn\'t know, where would you place '
                             'your marker?"',
         'train_end_say': '"Okay great, I will bring the tablet back in a moment."',
-        'open_box': 'Put the tablet aside. Open the leftmost box, show the child the '
+        'open_box': 'Put the tablet aside. Open the fifth box from the left, show the child the '
                     'animal and close the box again.\nThen put the tablet in front of '
                     'the child.',
         'open_box_say': '"I am going to open one box for you. Let\'s see what is in '
@@ -473,7 +489,7 @@ EXP_TEXT = {
                            'omhoog]." [laat het kind beide dieren benoemen]\n'
                            '"Jouw taak is om uit te zoeken of er meer {pl_l} of meer '
                            '{pl_r} in de doosjes zitten. In elk van deze doosjes zit '
-                           'één dier, {a_l} of {a_r}."',
+                           'één dier, {a_l} of {a_r}. Ik weet niet of er meer {pl_l} of meer {pl_r} in de doosjes zitten."',
         'setup': 'Ronde {t} van {n}\n\nRuim de doosjes, het logo en de '
                  'speelgoeddieren van de vorige ronde op. Zet de {k} {color} doosjes '
                  'voor het kind neer en introduceer de twee dieren ({pl_l} / {pl_r}).',
@@ -482,7 +498,7 @@ EXP_TEXT = {
                      '{the_l} omhoog] en {pl_r} [houd {the_r} omhoog]." [laat het kind '
                      'beide dieren benoemen]\n"In elk doosje zit {a_l} of {a_r}. Jouw '
                      'taak is om uit te zoeken of er meer {pl_l} of meer {pl_r} in '
-                     'zitten."',
+                     'zitten. Ik weet niet of er meer {pl_l} of meer {pl_r} in de doosjes zitten."',
         'train_demo': 'Oefenen met de schaal (alleen in de eerste ronde): laat het '
                       'kind zien hoe de schaal werkt, geef dan de tablet aan het kind '
                       'en tik op Verder.',
@@ -495,20 +511,28 @@ EXP_TEXT = {
                           '{l}-kant]." [hetzelfde voor de {pl_r}]\n"En als je het niet '
                           'weet, dan zet je je pijltje hier." [het midden, waar het ? '
                           'verschijnt]',
-        'train_left': 'Oefening 1 van 3: het kind laat zien waar het pijltje komt als '
+        'train_left': 'Oefening 1 van 5: het kind laat zien waar het pijltje komt als '
                       'het echt denkt dat er meer {pl_l} zijn. Verder controleert het '
                       'antwoord; is het fout, dan probeert het kind het opnieuw.',
         'train_left_say': '"Oké, als je straks echt zou denken dat er meer {pl_l} '
                           'zijn, waar zou je je pijltje dan zetten?"',
-        'train_right': 'Oefening 2 van 3: ... als het echt denkt dat er meer {pl_r} '
+        'train_left_kind': 'Oefening 2 van 5: ... als het een beetje denkt dat er meer '
+                           '{pl_l} zijn (de helft van de {l}-kant naast het midden).',
+        'train_left_kind_say': '"Goed zo, en als je een beetje zou denken dat er meer '
+                               '{pl_l} zijn, waar zou je je pijltje dan zetten?"',
+        'train_right': 'Oefening 3 van 5: ... als het echt denkt dat er meer {pl_r} '
                        'zijn.',
         'train_right_say': '"Goed zo, en als je echt zou denken dat er meer {pl_r} '
                            'zijn, waar zou je je pijltje dan zetten?"',
-        'train_middle': 'Oefening 3 van 3: ... als het het niet weet.',
+        'train_right_kind': 'Oefening 4 van 5: ... als het een beetje denkt dat er meer '
+                            '{pl_r} zijn (de helft van de {r}-kant naast het midden).',
+        'train_right_kind_say': '"Goed zo, en als je een beetje zou denken dat er meer '
+                                '{pl_r} zijn, waar zou je je pijltje dan zetten?"',
+        'train_middle': 'Oefening 5 van 5: ... als het het niet weet.',
         'train_middle_say': '"Goed zo, en als je het niet zou weten, waar zou je je '
                             'pijltje dan zetten?"',
         'train_end_say': '"Super, ik pak de tablet zo weer terug."',
-        'open_box': 'Leg de tablet aan de kant. Maak het meest linkse doosje open, '
+        'open_box': 'Leg de tablet aan de kant. Maak het vijfde doosje van links open, '
                     'laat het dier zien en doe het doosje weer dicht.\nLeg dan de '
                     'tablet voor het kind neer.',
         'open_box_say': '"Ik ga één doosje voor je openmaken. Eens kijken wat erin '
@@ -942,11 +966,12 @@ class Button:
         return self.enabled and self.box.contains(xy)
 
 
-def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0):
+def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0,
+            open_at=0):
     """A row of n boxes (lid, body and two clasps) in the box colour, centred
-    at (x0, y). The first n_open boxes (from the left) are drawn open; with
-    `arrow` an arrow points at the first one (the box the experimenter
-    opens). `width` is the width of the whole row (default: up to the screen
+    at (x0, y). n_open boxes are drawn open, starting at box `open_at`
+    (0 = leftmost); with `arrow` an arrow points at the first open one (the
+    box the experimenter opens). `width` is the width of the whole row (default: up to the screen
     width, boxes at most 0.1 wide)."""
     if width is None:
         width = min(n * 0.1 + (n - 1) * 0.02, 2 * HALF_W * 0.92)
@@ -959,7 +984,7 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0):
         x = x0 + (i - (n - 1) / 2) * (w + gap)
         stims.append(visual.Rect(win, width=w, height=h, pos=(x, y - h * 0.1),
                                  fillColor=color, lineColor='#333333', lineWidth=line))
-        if i < n_open:
+        if open_at <= i < open_at + n_open:
             # open: dark opening, lid swung up around its right back corner
             stims.append(visual.Rect(win, width=w * 0.94, height=h * 0.1,
                                      pos=(x, y + h * 0.33), fillColor='#1a1a1a',
@@ -972,7 +997,7 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0):
                 lineColor='#333333', lineWidth=line,
                 pos=(hinge[0] + dx * math.cos(angle) - dy * math.sin(angle),
                      hinge[1] + dx * math.sin(angle) + dy * math.cos(angle))))
-        if i == 0 and arrow:  # arrow pointing down at the open box
+        if i == open_at and arrow:  # arrow pointing down at the open box
             top, tip = y + h * 3.1, y + h * 2.0  # above the open lid
             stims.append(visual.ShapeStim(
                 win, fillColor='#555555', lineColor=None,
@@ -980,7 +1005,7 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0):
                           (x + w * 0.08, tip + w * 0.18), (x + w * 0.22, tip + w * 0.18),
                           (x, tip), (x - w * 0.22, tip + w * 0.18),
                           (x - w * 0.08, tip + w * 0.18)]))
-        if i >= n_open:
+        if not open_at <= i < open_at + n_open:
             stims.append(visual.Rect(win, width=w * 1.04, height=h * 0.25,
                                      pos=(x, y + h * 0.4), fillColor=color,
                                      lineColor='#333333', lineWidth=line))
@@ -991,17 +1016,19 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0):
     return stims
 
 
-def experimenter_screen(text, color=None, say=None):
+def experimenter_screen(text, color=None, say=None, opened=False):
     """Instruction screen for the experimenter; tap anywhere (except the (i)
     icon) to continue. `say` is the script text shown below the instruction
-    while help is on. With `color`, a row of boxes in that colour is shown."""
+    while help is on. With `color`, a row of closed boxes in that colour is
+    shown; with `opened`, box OPEN_BOX is open, with an arrow pointing at it."""
     msg = visual.TextStim(win, text=text, height=0.034, color=EXP_COLOR,
                           italic=True, font=FONT, wrapWidth=2 * HALF_W * 0.85,
                           pos=(0, 0.4), anchorVert='top')
     script = say_text(say, (0, 0.16))
     hint = visual.TextStim(win, text=EXP['tap'], height=0.026, color=EXP_COLOR,
                            italic=True, font=FONT, pos=(0, -0.44))
-    boxes = box_row(color, y=-0.33) if color else []
+    boxes = (box_row(color, y=-0.33, n_open=int(opened), arrow=opened,
+                     open_at=OPEN_BOX - 1) if color else [])
     wait_release()
     while True:
         check_quit()
@@ -1339,7 +1366,7 @@ def scale_texture(color_left, color_right, w, h):
 
 def rating_scale(animal_left, animal_right, header, button_text, first=None,
                  binary=False, question=None, say=None, thought=None, check=None,
-                 follow=False):
+                 follow=False, thought_strength=1.0):
     """Scale screen as in code_caro/confidence_scale_GOEDE_KLEUREN... (with
     the question from trial1_test_text and larger animals): a small header,
     the question, an animal (with its name) above each end, and a bar shading
@@ -1354,18 +1381,20 @@ def rating_scale(animal_left, animal_right, header, button_text, first=None,
     half are faded (UNCHOSEN_OPACITY).
 
     `first` (-1..1) is the first answer: on the second rating the handle
-    starts there, on a grey line labelled "your first answer"; the label
+    starts there, labelled "your first answer" (no line); the label
     disappears once the child moves the handle. A "?" under the handle marks
     the exact middle. Returns a dict: pos (-1..1), rt (button), first_touch_rt,
     n_touches, and with `binary` also choice (animal) and choice_rt.
 
     `question` replaces the child's question ('' = none, for the practice);
     `thought` (an animal, or 'dont_know') shows a thinking child in the
-    middle with that animal (or a "?") in the thought bubble (practice);
+    middle with that animal (or a "?") in the thought bubble (practice),
+    sized and faded by `thought_strength` (0..1, 1 = full; see
+    ThoughtBubble.draw);
     with `follow` the bubble shows the animal the marker points to, larger
     the closer it is to that end (see ThoughtBubble);
     `check` (practice): a function pos -> right?; Continue then gives
-    feedback (chime / 'oops') and only goes on once the answer is right
+    feedback (green / red marker, no sound) and only goes on once the answer is right
     (the experimenter can skip after PRACTICE_SKIP_AFTER wrong answers); the
     result then also has attempts, correct and first_pos;
     `say` is the experimenter's script text, shown under the button while
@@ -1405,11 +1434,8 @@ def rating_scale(animal_left, animal_right, header, button_text, first=None,
         win, image=scale_texture(ANIMAL_COLORS[animal_left], ANIMAL_COLORS[animal_right],
                                  int(2 * half_len * px), int(bar_h * px)),
         size=(2 * half_len, bar_h), pos=(0, y))
-    first_marker = first_label = None
-    if first is not None:
-        first_marker = visual.Rect(win, width=3 * PX, height=52 * PX,
-                                   pos=(first * half_len, y),
-                                   fillColor='#777777', lineColor=None)
+    first_label = None
+    if first is not None:  # label under the first answer (no line there)
         label_y = y - (95 if first == 0 else 40) * PX  # below the "?" if in the middle
         first_label = visual.TextStim(win, text=TXT['first_answer'],
                                       pos=(first * half_len, label_y),
@@ -1475,7 +1501,7 @@ def rating_scale(animal_left, animal_right, header, button_text, first=None,
         if bubble and follow:
             bubble.follow(pos, placed)
         elif bubble:
-            bubble.draw(thought)
+            bubble.draw(thought, thought_strength)
         img_l.draw()
         img_r.draw()
         name_l.draw()
@@ -1483,10 +1509,8 @@ def rating_scale(animal_left, animal_right, header, button_text, first=None,
         bar.draw()
         if veil:
             veil.draw()
-        if first_marker:
-            first_marker.draw()
-            if n_touches == 0:
-                first_label.draw()
+        if first_label and n_touches == 0:
+            first_label.draw()
         if placed and pos == 0:
             middle_mark.draw()
         if placed:
@@ -1614,22 +1638,28 @@ class ThoughtBubble:
 def slider_training(left, right, names):
     """Practice with the scale (first round only, as in the procedure script):
     the experimenter shows how the scale works ("Let me show you!"), then the
-    child shows where the marker goes if they really thought there were more
-    of the left animal, more of the right animal, and if they didn't know (a
-    thinking child with that animal, or "?", in a thought bubble). Returns
-    the practice positions (-100..100)."""
+    child shows where the marker goes if they really / kind of thought there
+    were more of the left animal, the same for the right animal, and if they
+    didn't know (a thinking child with that animal - small and faint for
+    "kind of" - or "?" in a thought bubble). Returns the practice positions
+    (-100..100)."""
     rating_scale(left, right, EXP['train_demo'], TXT['continue'],
                  question=TXT['practice_show'], say=EXP['train_demo_say'].format(**names),
                  follow=True)
     result = {}
-    for key, column, thought, check in (
-            ('train_left', 'practice_really_left', left, lambda p: p <= -REALLY),
-            ('train_right', 'practice_really_right', right, lambda p: p >= REALLY),
-            ('train_middle', 'practice_dont_know', 'dont_know',
+    kind = PRACTICE_KIND_OF_STRENGTH
+    for key, column, thought, strength, check in (
+            ('train_left', 'practice_really_left', left, 1.0, lambda p: p <= -REALLY),
+            ('train_left_kind', 'practice_kind_of_left', left, kind,
+             lambda p: -REALLY < p < -PRACTICE_MIDDLE),
+            ('train_right', 'practice_really_right', right, 1.0, lambda p: p >= REALLY),
+            ('train_right_kind', 'practice_kind_of_right', right, kind,
+             lambda p: PRACTICE_MIDDLE < p < REALLY),
+            ('train_middle', 'practice_dont_know', 'dont_know', 1.0,
              lambda p: abs(p) <= PRACTICE_MIDDLE)):
         answer = rating_scale(left, right, EXP[key].format(**names), TXT['continue'],
                               question='', say=EXP[key + '_say'].format(**names),
-                              thought=thought, check=check)
+                              thought=thought, thought_strength=strength, check=check)
         result[column] = round(answer['pos'] * 100, 1)
         result[column + '_first'] = round(answer['first_pos'] * 100, 1)
         result[column + '_attempts'] = answer['attempts']
@@ -2100,7 +2130,8 @@ session = {'child_team': child_team, 'team_pic_left': team_left,
            'stickers_to_sun_member': stickers['sun'],
            'stickers_to_moon_member': stickers['moon'],
            'sticker_rt': round(sticker_rt, 3),
-           **{f'practice_{item}{suffix}': '' for item in ('really_left', 'really_right', 'dont_know')
+           **{f'practice_{item}{suffix}': '' for item in ('really_left', 'kind_of_left', 'really_right',
+                                                      'kind_of_right', 'dont_know')
               for suffix in ('', '_first', '_attempts', '_correct')}}
 
 solutions = []  # (box, left, right, the child's final animal) per round, for the end
@@ -2123,7 +2154,7 @@ for t in trials:
     if first_round:
         session.update(slider_training(left, right, names))
         open_say = EXP['train_end_say'] + '\n' + open_say
-    experimenter_screen(EXP['open_box'], color=BOX_DISPLAY[box], say=open_say)
+    experimenter_screen(EXP['open_box'], color=BOX_DISPLAY[box], say=open_say, opened=True)
 
     def header(step):
         return EXP['header'].format(t=t['trial'], n=len(trials), s=step,

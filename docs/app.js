@@ -53,8 +53,16 @@ function fit() {
 window.addEventListener('resize', fit);
 fit();
 
+// Every screen starts with clear(): it stops a video that may still be
+// playing, counts the screen (screenId) and, while the experimenter can go
+// back, adds the back button.
+let screenId = 0;
 function clear() {
+  stage.querySelectorAll('video').forEach(v => v.pause());
   stage.innerHTML = '';
+  stage.style.pointerEvents = '';
+  screenId++;
+  if (goBack) backIcon();
 }
 function add(tag, cls, parent = stage) {
   const e = document.createElement(tag);
@@ -181,6 +189,44 @@ function helpIcon() {
   return e;
 }
 
+// Back button (under the (i)): the experimenter goes back one screen. The
+// session runs as a list of steps, one screen each (runSteps); the answers
+// are kept in S. Going back sets S to what it was before the previous screen
+// and shows that screen again; the screen that was left is dropped. A step
+// that shows no screen (for example saving a data row) returns NO_SCREEN and
+// is passed over when going back, but run again when going forward.
+const BACK = Symbol('back'), NO_SCREEN = Symbol('no screen');
+let goBack = null;  // set while there is a screen to go back to
+function backIcon() {
+  const e = add('div');
+  e.id = 'back';
+  e.textContent = '\u2190';
+  place(e, -HALF_W + 0.04, 0.39);
+  onTap(e, () => { if (goBack) goBack(); });
+  return e;
+}
+async function runSteps(steps, S) {
+  const history = [];  // [step, S before it] for each screen shown
+  let i = 0;
+  while (i < steps.length) {
+    const before = JSON.stringify(S);
+    const outcome = await new Promise((resolve, reject) => {
+      goBack = history.length ? () => resolve(BACK) : null;
+      Promise.resolve(steps[i](S)).then(resolve, reject);
+    });
+    goBack = null;
+    if (outcome === BACK) {
+      const [j, saved] = history.pop();
+      Object.keys(S).forEach(key => { delete S[key]; });
+      Object.assign(S, JSON.parse(saved));
+      i = j;
+    } else {
+      if (outcome !== NO_SCREEN) history.push([i, before]);
+      i++;
+    }
+  }
+}
+
 // SVG layer for the boxes, arrows and ticks
 const NS = 'http://www.w3.org/2000/svg';
 function svgLayer(parent = stage) {
@@ -206,9 +252,10 @@ function svgPolygon(parent, points, fill) {
   return svgAdd(parent, 'polygon', {points: points.map(([x, y]) => `${X(x)},${Y(y)}`).join(' '), fill});
 }
 
-// A row of n boxes in the box colour (as box_row in the PsychoPy version).
+// A row of n boxes in the box colour (as box_row in the PsychoPy version): nOpen
+// boxes are open, starting at box openAt (0 = leftmost); the arrow points at box openAt.
 function boxRow(color, {n = CFG.N_BOXES, y = -0.2, nOpen = 1, arrow = true, width = null,
-                        x0 = 0, parent = null} = {}) {
+                        x0 = 0, parent = null, openAt = 0} = {}) {
   const layer = parent || svgLayer();
   const g = svgAdd(layer, 'g', {});
   if (width === null) width = Math.min(n * 0.1 + (n - 1) * 0.02, 2 * HALF_W * 0.92);
@@ -218,8 +265,9 @@ function boxRow(color, {n = CFG.N_BOXES, y = -0.2, nOpen = 1, arrow = true, widt
   const line = w > 0.06 ? 1.5 : 1;
   for (let i = 0; i < n; i++) {
     const x = x0 + (i - (n - 1) / 2) * (w + gap);
+    const isOpen = i >= openAt && i < openAt + nOpen;
     svgRect(g, x, y - h * 0.1, w, h, color, {stroke: '#333333', lineWidth: line});
-    if (i < nOpen) {
+    if (isOpen) {
       // open: dark opening, lid swung up around its right back corner
       svgRect(g, x, y + h * 0.33, w * 0.94, h * 0.1, '#1a1a1a');
       const angle = -40 * Math.PI / 180;
@@ -229,13 +277,13 @@ function boxRow(color, {n = CFG.N_BOXES, y = -0.2, nOpen = 1, arrow = true, widt
               hinge[1] + dx * Math.sin(angle) + dy * Math.cos(angle),
               w * 1.04, h * 0.25, color, {stroke: '#333333', lineWidth: line, ori: 40});
     }
-    if (i === 0 && arrow) {
+    if (i === openAt && arrow) {
       const top = y + h * 3.1, tip = y + h * 2.0;
       svgPolygon(g, [[x - w * 0.08, top], [x + w * 0.08, top], [x + w * 0.08, tip + w * 0.18],
                      [x + w * 0.22, tip + w * 0.18], [x, tip], [x - w * 0.22, tip + w * 0.18],
                      [x - w * 0.08, tip + w * 0.18]], '#555555');
     }
-    if (i >= nOpen) {
+    if (!isOpen) {
       svgRect(g, x, y + h * 0.4, w * 1.04, h * 0.25, color, {stroke: '#333333', lineWidth: line});
     }
     for (const side of [-1, 1]) {
@@ -487,18 +535,20 @@ function startForm() {
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
-async function experimenterScreen(str, color = null, say = null) {
+// With color, a row of closed boxes; with opened, box OPEN_BOX is open, with an arrow.
+async function experimenterScreen(str, color = null, say = null, opened = false) {
   clear();
   helpIcon();
   expText(str, 0, 0.4, {size: 0.034, anchor: 'top', width: 2 * HALF_W * 0.85});
   sayText(say, 0, 0.16);
   expText(EXP.tap, 0, -0.44, {size: 0.026});
-  if (color) boxRow(color, {y: -0.33});
+  if (color) boxRow(color, {y: -0.33, nOpen: opened ? 1 : 0, arrow: opened, openAt: CFG.OPEN_BOX - 1});
   await released();
+  const me = screenId;  // after going back, a tap no longer counts for this screen
   await new Promise(resolve => stage.addEventListener('pointerdown', function handler(event) {
     if (event.target.id === 'help') return;
     stage.removeEventListener('pointerdown', handler);
-    resolve();
+    if (screenId === me) resolve();
   }));
 }
 
@@ -747,7 +797,8 @@ class ThoughtBubble {
 // Belief scale (as rating_scale in the PsychoPy version)
 async function ratingScale(left, right, header, buttonText,
                            {first = null, binary = false, question = null, say = null,
-                            thought = null, check = null, follow = false} = {}) {
+                            thought = null, check = null, follow = false,
+                            thoughtStrength = 1} = {}) {
   clear();
   helpIcon();
   const taskW = Math.min(1100 * PX, 0.92 * 2 * HALF_W);
@@ -777,10 +828,7 @@ async function ratingScale(left, right, header, buttonText,
   scaleParts.push(bar);
   let veil = null;
   let firstLabel = null;
-  if (first !== null) {
-    const marker = add('div');
-    Object.assign(marker.style, {width: '3px', height: '52px', background: '#777777'});
-    place(marker, first * halfLen, y);
+  if (first !== null) {  // label under the first answer (no line there); gone once moved
     firstLabel = text(TXT.first_answer, first * halfLen, y - (first === 0 ? 95 : 40) * PX,
                       {size: 14 * PX, color: '#777777'});
   }
@@ -845,7 +893,7 @@ async function ratingScale(left, right, header, buttonText,
     middleMark.style.display = placed && pos === 0 ? '' : 'none';
     if (firstLabel) firstLabel.style.display = nTouches === 0 ? '' : 'none';
     if (bubble && follow) bubble.follow(pos, placed);
-    else if (bubble) bubble.show(thought);
+    else if (bubble) bubble.show(thought, thoughtStrength);
     setEnabled(done, placed);
     skip.style.display = check && attempts >= CFG.PRACTICE_SKIP_AFTER ? '' : 'none';
   };
@@ -884,12 +932,11 @@ async function ratingScale(left, right, header, buttonText,
     onTap(done, async () => {
       if (busy) return;
       if (!check) return finish({});
-      // practice: chime and green marker, or 'oops' and a red shaking marker
+      // practice: green marker, or a red shaking marker (no sound)
       busy = true;
       attempts++;
       if (attempts === 1) result.first_pos = pos;
       const right = check(pos);
-      Sound.play(right ? 'correct' : 'wrong');
       draw(right ? '#2e9d4a' : '#d93025');
       if (!right) handle.classList.add('shake');
       await sleep(800);
@@ -903,25 +950,36 @@ async function ratingScale(left, right, header, buttonText,
   return result;
 }
 
-async function sliderTraining(left, right, names) {
-  await ratingScale(left, right, EXP.train_demo, TXT.continue,
-                    {question: TXT.practice_show, say: fmt(EXP.train_demo_say, names), follow: true});
-  const result = {};
-  const items = [['train_left', 'practice_really_left', left, p => p <= -CFG.REALLY],
-                 ['train_right', 'practice_really_right', right, p => p >= CFG.REALLY],
-                 ['train_middle', 'practice_dont_know', 'dont_know',
-                  p => Math.abs(p) <= CFG.PRACTICE_MIDDLE]];
-  for (const [key, column, thought, check] of items) {
-    const answer = await ratingScale(left, right, fmt(EXP[key], names), TXT.continue,
-                                     {question: '', say: fmt(EXP[`${key}_say`], names), thought, check});
-    result[column] = round(answer.pos * 100, 1);
-    result[`${column}_first`] = round(answer.first_pos * 100, 1);
-    result[`${column}_attempts`] = answer.attempts;
-    result[`${column}_correct`] = answer.correct;
-  }
-  return result;
+// Practice with the scale (first round only): the demonstration ("Let me
+// show you!"), then really / kind of (small, faint animal in the bubble) for
+// each side and don't know. One screen each: [EXP key, data column, thought,
+// thought strength, check].
+function practiceItems(left, right) {
+  const kind = CFG.PRACTICE_KIND_OF_STRENGTH, mid = CFG.PRACTICE_MIDDLE;
+  return [['train_left', 'practice_really_left', left, 1, p => p <= -CFG.REALLY],
+          ['train_left_kind', 'practice_kind_of_left', left, kind,
+           p => p > -CFG.REALLY && p < -mid],
+          ['train_right', 'practice_really_right', right, 1, p => p >= CFG.REALLY],
+          ['train_right_kind', 'practice_kind_of_right', right, kind,
+           p => p > mid && p < CFG.REALLY],
+          ['train_middle', 'practice_dont_know', 'dont_know', 1, p => Math.abs(p) <= mid]];
 }
-
+function practiceSteps(left, right, names) {
+  const steps = [() => ratingScale(left, right, EXP.train_demo, TXT.continue,
+                                   {question: TXT.practice_show, say: fmt(EXP.train_demo_say, names),
+                                    follow: true})];
+  practiceItems(left, right).forEach(([key, column, thought, thoughtStrength, check]) =>
+    steps.push(async S => {
+      const answer = await ratingScale(left, right, fmt(EXP[key], names), TXT.continue,
+                                       {question: '', say: fmt(EXP[`${key}_say`], names), thought,
+                                        thoughtStrength, check});
+      Object.assign(S.practice, {[column]: round(answer.pos * 100, 1),
+                                 [`${column}_first`]: round(answer.first_pos * 100, 1),
+                                 [`${column}_attempts`]: answer.attempts,
+                                 [`${column}_correct`]: answer.correct});
+    }));
+  return steps;
+}
 // Video screen: tap the video to start it; afterwards Replay or Continue.
 // Returns {plays, missing}.
 async function playVideo(name) {
@@ -1209,39 +1267,48 @@ async function main() {
 
   const sessionStart = performance.now();
   const minutes = () => round((performance.now() - sessionStart) / 60000, 2);
-  await experimenterScreen(fmt(EXP.start, {p: info.participant, o: info.order}), null, EXP.start_say);
-  const group = await chooseGroup();
-  const childTeam = group.team;
-  const otherTeam = CFG.TEAMS.find(t => t !== childTeam);
-  const ownName = CFG.TEAM_NAMES[lang][childTeam];
-
-  const teams = await showTeams(childTeam);
-
   const memberGender = ['female', 'male'].includes(info.gender) ? info.gender : pick(['female', 'male']);
   const [thisSg, pl, him] = CFG.MEMBER_WORDS[lang][memberGender];
   // sticker task, then liking check: the same two members on the same sides
   const memberSides = Math.random() < 0.5 ? [...CFG.TEAMS] : [...CFG.TEAMS].reverse();
-  await experimenterScreen(fmt(EXP.sticker_intro, {n: CFG.N_STICKERS, pl}), null,
-                           fmt(EXP.sticker_intro_say, {pl, this_sg: thisSg}));
-  const stickers = await stickerTask(memberGender, memberSides);
-  const liking = await likingScreen(memberGender, memberSides, EXP.liking,
-                                    fmt(EXP.liking_say, {this_sg: thisSg, him}));
   const score = v => (v ? CFG.LIKING_SCORE[v] : '');
-  const session = {child_team: childTeam, team_pic_left: group.left,
-                   team_choice_rt: round(group.rt, 3), teams_pic_top: teams.top, ...teams.tap,
-                   sticker_member_gender: memberGender, sticker_pic_left: stickers.left,
-                   liking_moon_member: liking.answer.moon, liking_sun_member: liking.answer.sun,
-                   liking_own: score(liking.answer[childTeam]),
-                   liking_other: score(liking.answer[otherTeam]),
-                   liking_rt: round(liking.rt, 3),
-                   stickers_to_sun_member: stickers.count.sun,
-                   stickers_to_moon_member: stickers.count.moon,
-                   sticker_rt: round(stickers.rt, 3)};
-  ['really_left', 'really_right', 'dont_know'].forEach(item =>
-    ['', '_first', '_attempts', '_correct'].forEach(suffix => { session[`practice_${item}${suffix}`] = ''; }));
+  const otherOf = team => CFG.TEAMS.find(x => x !== team);
 
-  const solutions = [];
-  for (const t of trials) {
+  // The session as a list of steps, one screen each (see runSteps); all
+  // answers are kept in S, so that going back can undo them.
+  const S = {practice: {}, tr: trials.map(() => ({videos: {}, checks: {}}))};
+  const steps = [];
+  steps.push(() => experimenterScreen(fmt(EXP.start, {p: info.participant, o: info.order}), null,
+                                      EXP.start_say));
+  steps.push(async () => { S.group = await chooseGroup(); });
+  steps.push(async () => { S.teams = await showTeams(S.group.team); });
+  steps.push(() => experimenterScreen(fmt(EXP.sticker_intro, {n: CFG.N_STICKERS, pl}), null,
+                                      fmt(EXP.sticker_intro_say, {pl, this_sg: thisSg})));
+  steps.push(async () => { S.stickers = await stickerTask(memberGender, memberSides); });
+  steps.push(async () => {
+    S.liking = await likingScreen(memberGender, memberSides, EXP.liking,
+                                  fmt(EXP.liking_say, {this_sg: thisSg, him}));
+  });
+  const sessionCols = () => {
+    const childTeam = S.group.team, otherTeam = otherOf(childTeam);
+    const cols = {child_team: childTeam, team_pic_left: S.group.left,
+                  team_choice_rt: round(S.group.rt, 3), teams_pic_top: S.teams.top, ...S.teams.tap,
+                  sticker_member_gender: memberGender, sticker_pic_left: S.stickers.left,
+                  liking_moon_member: S.liking.answer.moon, liking_sun_member: S.liking.answer.sun,
+                  liking_own: score(S.liking.answer[childTeam]),
+                  liking_other: score(S.liking.answer[otherTeam]),
+                  liking_rt: round(S.liking.rt, 3),
+                  stickers_to_sun_member: S.stickers.count.sun,
+                  stickers_to_moon_member: S.stickers.count.moon,
+                  sticker_rt: round(S.stickers.rt, 3)};
+    practiceItems('', '').forEach(([, column]) =>
+      ['', '_first', '_attempts', '_correct'].forEach(suffix => {
+        cols[`${column}${suffix}`] = S.practice[`${column}${suffix}`] ?? '';
+      }));
+    return cols;
+  };
+
+  trials.forEach((t, k) => {
     const left = t.animal_left, right = t.animal_right, box = t.box_color;
     const names = {pl_l: CFG.PLURALS[lang][left], pl_r: CFG.PLURALS[lang][right],
                    a_l: withArticle(left), a_r: withArticle(right),
@@ -1249,116 +1316,135 @@ async function main() {
                    the_l: theAnimal(left), the_r: theAnimal(right)};
     const firstRound = t.trial === 1;
     const setup = firstRound ? 'setup_first' : 'setup';
-    await experimenterScreen(
-      fmt(EXP[setup], {t: t.trial, n: trials.length, k: CFG.N_BOXES,
-                       color: lang === 'nl' ? CFG.COLOR_ADJ_NL[box] : box, ...names}),
-      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names));
-
-    // Practice with the scale (first round only), then open the first box
-    let openSay = EXP.open_box_say;
-    if (firstRound) {
-      Object.assign(session, await sliderTraining(left, right, names));
-      openSay = `${EXP.train_end_say}\n${openSay}`;
-    }
-    await experimenterScreen(EXP.open_box, CFG.BOX_DISPLAY[box], openSay);
-
     const header = s => fmt(EXP.header, {t: t.trial, n: trials.length, s,
                                          color: cap(CFG.COLOR_NAMES[lang][box])});
+    const T = () => S.tr[k];  // this trial's answers
+    // the video team claims the animal the child did not choose
+    const claimed = () => (T().rating1.choice === left ? right : left);
+    const videoTeam = () => (t.group_type === 'ingroup' ? S.group.team : otherOf(S.group.team));
+    const whose = () => EXP[videoTeam() === S.group.team ? 'your_team' : 'other_team'];
+    const teamName = () => CFG.TEAM_NAMES[lang][videoTeam()];
+    const vid = () => videoName(box, videoTeam(), t.reason_quality, claimed());
+    const attempts = () => Object.keys(T().checks).length;  // check screens done
+    const lastCheck = () => T().checks[attempts()];
+
+    steps.push(() => experimenterScreen(
+      fmt(EXP[setup], {t: t.trial, n: trials.length, k: CFG.N_BOXES,
+                       color: lang === 'nl' ? CFG.COLOR_ADJ_NL[box] : box, ...names}),
+      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names)));
+    // Practice with the scale (first round only), then open the box
+    if (firstRound) steps.push(...practiceSteps(left, right, names));
+    steps.push(() => experimenterScreen(EXP.open_box, CFG.BOX_DISPLAY[box],
+                                        (firstRound ? `${EXP.train_end_say}\n` : '') + EXP.open_box_say,
+                                        true));
 
     // Initial belief: binary choice, then how sure on the scale
-    const rating1 = await ratingScale(left, right, header(1), TXT.continue,
+    steps.push(async () => {
+      T().rating1 = await ratingScale(left, right, header(1), TXT.continue,
                                       {binary: true, say: fmt(EXP.ask_binary_say, names),
                                        follow: CFG.BUBBLE_IN_TEST});
-    const r1 = rating1.pos;
-    const choice = rating1.choice;
+    });
 
     // Video: the team states the belief opposite to the child's choice
-    const claimed = choice === left ? right : left;
-    const videoTeam = t.group_type === 'ingroup' ? childTeam : otherTeam;
-    const whose = EXP[videoTeam === childTeam ? 'your_team' : 'other_team'];
-    const teamName = CFG.TEAM_NAMES[lang][videoTeam];
-    const vid = videoName(box, videoTeam, t.reason_quality, claimed);
-    await experimenterScreen(fmt(EXP.before_video, {team: teamName, whose}), null,
-                             fmt(EXP.before_video_say, {team: teamName, whose, own: ownName, ...names}));
-    let video = await playVideo(vid);
-    let nPlays = video.plays;
-
-    // Check questions; if the answer is wrong the video is shown again
-    const nBoxes = reasonSet === 'numeric' ? CFG.BOXES_OPENED[t.reason_quality] : null;
-    const c = CFG.PLURALS[lang][claimed];
-    const why = nBoxes ? fmt(EXP.why_numeric, {n: CFG.NUMBER_WORDS[lang][nBoxes], c})
-                       : fmt(EXP[`why_${t.reason_quality}`], {c});
-    const checks = {};
-    for (let k = 1; k <= CFG.MAX_CHECKS; k++) CFG.CHECK_FIELDS.forEach(f => { checks[`check${k}_${f}`] = ''; });
-    let attempt, result;
-    for (attempt = 1; attempt <= CFG.MAX_CHECKS; attempt++) {
-      if (attempt > 1) {
-        await experimenterScreen(EXP.repeat, null, EXP.repeat_say);
-        video = await playVideo(vid);
-        nPlays += video.plays;
+    steps.push(() => experimenterScreen(
+      fmt(EXP.before_video, {team: teamName(), whose: whose()}), null,
+      fmt(EXP.before_video_say, {team: teamName(), whose: whose(),
+                                 own: CFG.TEAM_NAMES[lang][S.group.team], ...names})));
+    // Check questions; if an answer is wrong, the video is shown again
+    for (let a = 1; a <= CFG.MAX_CHECKS; a++) {
+      const needed = () => a === 1 || (attempts() === a - 1 && !lastCheck().passed);
+      if (a > 1) {
+        steps.push(() => (needed() ? experimenterScreen(EXP.repeat, null, EXP.repeat_say)
+                                   : NO_SCREEN));
       }
-      result = await checkScreen(videoTeam, whose, left, right, claimed, box, t.reason_quality, attempt);
-      CFG.CHECK_FIELDS.forEach(f => { checks[`check${attempt}_${f}`] = result[f]; });
-      if (result.passed) break;
+      steps.push(async () => {
+        if (!needed()) return NO_SCREEN;
+        T().videos[a] = await playVideo(vid());
+      });
+      steps.push(async () => {
+        if (!needed()) return NO_SCREEN;
+        T().checks[a] = await checkScreen(videoTeam(), whose(), left, right, claimed(), box,
+                                          t.reason_quality, a);
+      });
     }
-    if (attempt > CFG.MAX_CHECKS) attempt = CFG.MAX_CHECKS;
 
     // Summary of the team's belief; the toy animal goes on the team logo
-    await experimenterScreen(
-      (result.passed ? '' : fmt(EXP.give_up, {m: CFG.MAX_CHECKS}))
-        + fmt(EXP.summary, {animal: animalName(claimed).toLowerCase(), team: teamName}),
-      null, fmt(EXP.summary_say, {whose, c, why}));
+    steps.push(() => {
+      const nBoxes = reasonSet === 'numeric' ? CFG.BOXES_OPENED[t.reason_quality] : null;
+      const c = CFG.PLURALS[lang][claimed()];
+      const why = nBoxes ? fmt(EXP.why_numeric, {n: CFG.NUMBER_WORDS[lang][nBoxes], c})
+                         : fmt(EXP[`why_${t.reason_quality}`], {c});
+      return experimenterScreen(
+        (lastCheck().passed ? '' : fmt(EXP.give_up, {m: CFG.MAX_CHECKS}))
+          + fmt(EXP.summary, {animal: animalName(claimed()).toLowerCase(), team: teamName()}),
+        null, fmt(EXP.summary_say, {whose: whose(), c, why}));
+    });
 
     // Second belief; the handle starts at the first answer
-    let how, said;
-    if (r1 === 0) {
-      how = 'dont_know';
-      said = choice;
-    } else {
-      how = Math.abs(r1) >= CFG.REALLY ? 'really' : 'kind_of';
-      said = r1 < 0 ? left : right;
-    }
-    const last = t.trial === trials.length;
-    const rating2 = await ratingScale(left, right, header(2), last ? TXT.finish : TXT.next,
+    steps.push(async () => {
+      const r1 = T().rating1.pos;
+      let how, said;
+      if (r1 === 0) {
+        how = 'dont_know';
+        said = T().rating1.choice;
+      } else {
+        how = Math.abs(r1) >= CFG.REALLY ? 'really' : 'kind_of';
+        said = r1 < 0 ? left : right;
+      }
+      const last = t.trial === trials.length;
+      T().rating2 = await ratingScale(left, right, header(2), last ? TXT.finish : TXT.next,
                                       {first: r1, follow: CFG.BUBBLE_IN_TEST,
                                        say: fmt(EXP.ask_final_say, {how: EXP.how[how],
                                                                     pl: CFG.PLURALS[lang][said]})});
-    const r2 = rating2.pos;
-    const finalAnimal = r2 === 0 ? choice : (r2 < 0 ? left : right);  // middle: first choice
-    solutions.push([box, left, right, finalAnimal]);
+    });
 
-    const rt3 = v => (v === null || v === undefined ? null : round(v, 3));
-    const sign = claimed === right ? 1 : -1;  // positive = toward claimed animal
-    const row = {
-      ...info, ...session, swap_sides: swapSides, ...t,
-      belief1_choice: choice,
-      belief1_choice_side: choice === left ? 'left' : 'right',
-      belief1_choice_rt: round(rating1.choice_rt, 3),
-      video_team: videoTeam, claimed_animal: claimed,
-      video_file: `${vid}.mp4`, video_missing: video.missing, video_n_plays: nPlays,
-      check_n_attempts: attempt, check_passed: result.passed,
-      ...checks,
-      rating1_raw: round(r1 * 100, 1),
-      rating1_toward_claim: round(sign * r1 * 100, 1),
-      rating1_on_chosen_side: sign * r1 < 0,
-      rating1_rt: round(rating1.rt, 3),
-      rating1_first_touch_rt: rt3(rating1.first_touch_rt),
-      rating1_n_touches: rating1.n_touches,
-      rating2_raw: round(r2 * 100, 1),
-      rating2_toward_claim: round(sign * r2 * 100, 1),
-      rating2_rt: round(rating2.rt, 3),
-      rating2_first_touch_rt: rt3(rating2.first_touch_rt),
-      rating2_n_touches: rating2.n_touches,
-      change_toward_claim: round(sign * (r2 - r1) * 100, 1),
-      solution_animal: finalAnimal,
-      minutes_since_start: minutes(),
-      session_duration_min: '',  // filled in at the end
-    };
-    Data.saveRow(row);
-  }
+    // Data row of this trial (a trial done again replaces its row)
+    steps.push(async () => {
+      const {rating1, rating2} = T();
+      const r1 = rating1.pos, r2 = rating2.pos, choice = rating1.choice;
+      T().final_animal = r2 === 0 ? choice : (r2 < 0 ? left : right);  // middle: first choice
+      const checks = {};
+      for (let a = 1; a <= CFG.MAX_CHECKS; a++) {
+        CFG.CHECK_FIELDS.forEach(f => { checks[`check${a}_${f}`] = T().checks[a] ? T().checks[a][f] : ''; });
+      }
+      const videos = Object.values(T().videos);
+      const rt3 = v => (v === null || v === undefined ? null : round(v, 3));
+      const sign = claimed() === right ? 1 : -1;  // positive = toward claimed animal
+      Data.saveRow({
+        ...info, ...sessionCols(), swap_sides: swapSides, ...t,
+        belief1_choice: choice,
+        belief1_choice_side: choice === left ? 'left' : 'right',
+        belief1_choice_rt: round(rating1.choice_rt, 3),
+        video_team: videoTeam(), claimed_animal: claimed(),
+        video_file: `${vid()}.mp4`, video_missing: videos[videos.length - 1].missing,
+        video_n_plays: videos.reduce((sum, v) => sum + v.plays, 0),
+        check_n_attempts: attempts(), check_passed: lastCheck().passed,
+        ...checks,
+        rating1_raw: round(r1 * 100, 1),
+        rating1_toward_claim: round(sign * r1 * 100, 1),
+        rating1_on_chosen_side: sign * r1 < 0,
+        rating1_rt: round(rating1.rt, 3),
+        rating1_first_touch_rt: rt3(rating1.first_touch_rt),
+        rating1_n_touches: rating1.n_touches,
+        rating2_raw: round(r2 * 100, 1),
+        rating2_toward_claim: round(sign * r2 * 100, 1),
+        rating2_rt: round(rating2.rt, 3),
+        rating2_first_touch_rt: rt3(rating2.first_touch_rt),
+        rating2_n_touches: rating2.n_touches,
+        change_toward_claim: round(sign * (r2 - r1) * 100, 1),
+        solution_animal: T().final_animal,
+        minutes_since_start: minutes(),
+        session_duration_min: '',  // filled in at the end
+      });
+      return NO_SCREEN;
+    });
+  });
 
   // Solution: the child's animal was always right
-  await solutionScreen(solutions);
+  steps.push(() => solutionScreen(trials.map((t, k) =>
+    [t.box_color, t.animal_left, t.animal_right, S.tr[k].final_animal])));
+
+  await runSteps(steps, S);
 
   // Duration from the first screen to the last (the end screen)
   Data.addSessionDuration(info, minutes());
