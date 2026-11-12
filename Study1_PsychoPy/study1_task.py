@@ -675,7 +675,7 @@ def session_dialog():
         'No connection to the Google Sheet: counted from this computer only.\n'
         'Check that no other device has used this number.')
     source.setStyleSheet('color: grey' if from_sheet else 'color: #c05000')
-    test_run = QtWidgets.QCheckBox('test run (participant "test", not counted)')
+    test_run = QtWidgets.QCheckBox('test run (saved as participant "test"; not counted for numbers and counterbalancing)')
     test_run.toggled.connect(
         lambda on: participant.setText('test' if on else str(preview)))
     age = QtWidgets.QComboBox()

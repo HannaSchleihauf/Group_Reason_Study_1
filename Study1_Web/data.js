@@ -16,7 +16,7 @@
 // and editors can write and read. Viewers who cannot write there keep their
 // data on their device and save them with the download button.
 
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbymnDlHwad94A1t4hvbeV_R9q7VZ7O023Dpgmti6HtlXlrvJ6Uu_a5DbjGWele48U42/exec';           // web app URL of google_sheets/Code.gs ('' = device only)
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxpNj0xA6C-rnj7LRWV14Co0nxCulUOCVs-8Yo4NQNzMh4rJ25PWUbNq9l3fKwtiNpOSA/exec';           // web app URL of google_sheets/Code.gs ('' = device only)
 const SHEETS_TOKEN = 'group-reason'; // must be the same as TOKEN in Code.gs
 const RETRY_SECONDS = 30;
 
