@@ -17,17 +17,16 @@ Procedure per session
      with the happy sound; a tap on the other team plays a 'wrong' sound and
      the child can try again (team_tap_first own/other, team_tap_n_wrong,
      team_tap_rt).
-  1b. Liking check: one member of each team (same gender as the child;
-     random if gender is not female/male) is shown; the experimenter asks
-     whether the child likes each of them and taps the answer under the
+  1b. Sticker distribution: one member of each team (same gender as the
+     child; random if gender is not female/male; team on the left:
+     sticker_pic_left) is shown; the child gives 5 stickers to them and the
+     experimenter records the numbers by tapping the 5 dots under each photo
+     (stickers_to_sun_member, stickers_to_moon_member, 0-5 each).
+  1c. Liking check: the same two members (same sides); the experimenter
+     asks whether the child likes each of them and taps the answer under the
      photo (liking_moon_member, liking_sun_member: really_like /
      kind_of_like / kind_of_not_like / really_not_like; liking_own,
      liking_other: 4 = really like ... 1 = really not like).
-  1c. Sticker distribution: the same two members (same sides,
-     sticker_pic_left) are shown; the child gives
-     5 stickers to them and the experimenter records the numbers by tapping
-     the 5 dots under each photo (stickers_to_sun_member,
-     stickers_to_moon_member, 0-5 each).
   2. Four trials. Each trial:
        a. Experimenter set-up screens (box colour + animal pair; open the
           first box). In round 1 only, the child first practises the scale:
@@ -273,30 +272,34 @@ EXP_TEXT = {
                           'on your team, the {own} team."\n[point to the {other} '
                           'team] "And here are some people who play on the other '
                           'team, the {other} team."',
-        'liking': 'Liking check: leave one person of each team on the table (same '
-                  'gender as the child: {pl}). Ask about each and tap the child\'s '
+        'liking': 'Liking check: ask about each person and tap the child\'s '
                   'answer under the picture.',
-        'liking_say': '"Now I will ask you some questions about the two teams. '
-                      'Let\'s move these people out of the way."\n[point to {this_sg} '
+        'liking_say': '[point to {this_sg} '
                       'from your team] "Do you see {this_sg} from your team? Do you '
                       'like or not like {him}?" "Okay."\n"And do you really like or '
                       'kind of like {him}? / And do you really not like or kind of '
                       'not like {him}?" "Okay."\n[the same for {this_sg} from the '
-                      'other team]',
+                      'other team]\n[move the photos out of sight] "Later we\'ll hear '
+                      'from these two teams about the game we will play."',
         'liking_options': {'really_like': 'really like', 'kind_of_like': 'kind of like',
                            'kind_of_not_like': 'kind of not like',
                            'really_not_like': 'really not like'},
-        'sticker_intro': 'Sticker task\n\nPut {n} stickers on the table. On the next '
+        'sticker_intro': 'Sticker task\n\nLeave one person of each team on the table '
+                         '(same gender as the child: {pl}) and put {n} stickers on '
+                         'the table. On the next '
                          'screen the child gives them to the two team members; tap '
                          'the dots under each person to record how many each gets.',
-        'sticker_intro_say': '"Now I have some stickers here, let\'s see how many I '
+        'sticker_intro_say': '"Now I will ask you some questions about the two '
+                             'teams. Let\'s move these people out of the way." [leave '
+                             'one person of each team]\n'
+                             '"Now I have some stickers here, let\'s see how many I '
                              'have. I have 1, 2, 3, 4, 5 stickers. And now you can '
                              'tell me how many stickers to give each of these two '
                              '{pl}."\n[next screen, point to each person]\n'
                              '"So out of these 5 stickers, how many stickers should I '
                              'give to {this_sg} from your team?"\n'
                              '"Okay, and how many stickers should I give to {this_sg} '
-                             'from the other team?"',
+                             'from the other team?"\n[move the stickers out of sight]',
         'setup_first': 'Round 1 of {n} - game introduction\n\nPut the {k} {color} '
                        'boxes in front of the child and introduce the two animals '
                        '({pl_l} / {pl_r}).',
@@ -430,30 +433,36 @@ EXP_TEXT = {
                           'in jouw team spelen, het {own}-team."\n[wijs naar het '
                           '{other}-team] "En hier zijn een paar mensen die in het '
                           'andere team spelen, het {other}-team."',
-        'liking': 'Sympathie: laat van elk team één persoon van hetzelfde geslacht '
-                  'als het kind op tafel liggen ({pl}). Vraag naar ieder en tik het '
-                  'antwoord van het kind aan onder het plaatje.',
-        'liking_say': '"Nu ga ik je een paar vragen stellen over de twee teams. '
-                      'Laten we deze mensen even aan de kant zetten."\n[wijs naar '
+        'liking': 'Sympathie: vraag naar ieder en tik het antwoord van het kind '
+                  'aan onder het plaatje.',
+        'liking_say': '[wijs naar '
                       '{this_sg} van jouw team] "Zie je {this_sg} van jouw team? Vind '
                       'je {him} aardig of niet aardig?" "Oké."\n"En vind je {him} '
                       'heel aardig of een beetje aardig? / En vind je {him} helemaal '
                       'niet aardig of een beetje niet aardig?" "Oké."\n[hetzelfde '
-                      'voor {this_sg} van het andere team]',
+                      'voor {this_sg} van het andere team]\n[haal de foto\'s uit '
+                      'het zicht] "Straks horen we van deze twee teams over het '
+                      'spelletje dat we gaan spelen."',
         'liking_options': {'really_like': 'heel aardig', 'kind_of_like': 'een beetje aardig',
                            'kind_of_not_like': 'een beetje niet aardig',
                            'really_not_like': 'helemaal niet aardig'},
-        'sticker_intro': 'Stickertaak\n\nLeg {n} stickers op tafel. Op het volgende '
+        'sticker_intro': 'Stickertaak\n\nLaat van elk team één persoon van hetzelfde '
+                         'geslacht als het kind op tafel liggen ({pl}) en leg {n} '
+                         'stickers op tafel. Op het volgende '
                          'scherm verdeelt het kind ze over de twee teamleden; tik op '
                          'de bolletjes onder elke persoon om te noteren hoeveel '
                          'ieder krijgt.',
-        'sticker_intro_say': '"Ik heb hier wat stickers, laten we eens kijken '
+        'sticker_intro_say': '"Nu ga ik je een paar vragen stellen over de twee '
+                             'teams. Laten we deze mensen even aan de kant zetten." '
+                             '[laat van elk team één persoon liggen]\n'
+                             '"Ik heb hier wat stickers, laten we eens kijken '
                              'hoeveel ik er heb. Ik heb 1, 2, 3, 4, 5 stickers. Nu mag '
                              'jij mij vertellen hoeveel stickers ik aan elk van deze '
                              'twee {pl} moet geven."\n[volgend scherm, wijs naar elke '
                              'persoon]\n"Hoeveel van deze 5 stickers moet ik geven aan '
                              '{this_sg} van jouw team?"\n"Oké, en hoeveel stickers moet '
-                             'ik geven aan {this_sg} van het andere team?"',
+                             'ik geven aan {this_sg} van het andere team?"\n[haal de '
+                             'stickers uit het zicht]',
         'setup_first': 'Ronde 1 van {n} - introductie van het spel\n\nZet de {k} '
                        '{color} doosjes voor het kind neer en introduceer de twee '
                        'dieren ({pl_l} / {pl_r}).',
@@ -1193,7 +1202,7 @@ def liking_screen(member_gender, sides, header, say):
     title = visual.TextStim(win, text=header, pos=(0, 0.455), height=0.024,
                             color=EXP_COLOR, italic=True, font=FONT,
                             wrapWidth=2 * HALF_W * 0.85)
-    script = say_text(say, (0, -0.35), height=0.021)
+    script = say_text(say, (0, -0.325), height=0.019)
     stims, buttons = [], {}
     for team, xpos in zip(sides, (-x, x)):
         stims.append(load_image(STIM / 'members' / f'{team}_{member_gender}.png',
@@ -1205,7 +1214,7 @@ def liking_screen(member_gender, sides, header, say):
                                        (xpos, 0.045 - k * 0.068),
                                        color=EXP_BUTTON_COLOR, width=0.36)
                          for k, value in enumerate(LIKING)}
-    done = Button(TXT['continue'], (0, -0.3))
+    done = Button(TXT['continue'], (0, -0.265))
     skip = Button(EXP['skip'], (HALF_W - 0.12, -0.45), color=EXP_BUTTON_COLOR)
     answer = {team: '' for team in TEAMS}
 
@@ -2066,7 +2075,7 @@ own_name = TEAM_NAMES[lang][child_team]
 # the child taps their own team
 teams_top, team_tap = show_teams(child_team)
 
-# Liking check and sticker distribution: one member of each team, same
+# Sticker distribution, then liking check: one member of each team, same
 # gender as the child, on the same sides on both screens
 if info['gender'] in ('female', 'male'):
     member_gender = info['gender']
@@ -2074,12 +2083,11 @@ else:
     member_gender = random.choice(['female', 'male'])
 this_sg, pl, him = MEMBER_WORDS[lang][member_gender]
 member_sides = TEAMS[:] if random.random() < 0.5 else TEAMS[::-1]
-liking, liking_rt = liking_screen(member_gender, member_sides,
-                                  EXP['liking'].format(pl=pl),
-                                  EXP['liking_say'].format(this_sg=this_sg, him=him))
-experimenter_screen(EXP['sticker_intro'].format(n=N_STICKERS),
+experimenter_screen(EXP['sticker_intro'].format(n=N_STICKERS, pl=pl),
                     say=EXP['sticker_intro_say'].format(pl=pl, this_sg=this_sg))
 stickers, sticker_left, sticker_rt = sticker_task(member_gender, member_sides)
+liking, liking_rt = liking_screen(member_gender, member_sides, EXP['liking'],
+                                  EXP['liking_say'].format(this_sg=this_sg, him=him))
 session = {'child_team': child_team, 'team_pic_left': team_left,
            'team_choice_rt': round(team_rt, 3), 'teams_pic_top': teams_top,
            **team_tap,

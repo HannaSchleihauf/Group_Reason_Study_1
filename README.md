@@ -26,8 +26,8 @@ All commands below are run from the `Study1_Web` folder.
    *quality*: looked vs someone told them), participant number (counted up
    automatically), age and gender.
 2. **Introduction**: the child picks a team and taps their own team.
-3. **Liking check** with one gender-matched member of each team (really like …
-   really not like), then the **sticker task** (5 stickers) with the same two
+3. **Sticker task** (5 stickers) with one gender-matched member of each team,
+   then the **liking check** (really like … really not like) with the same two
    members.
 4. **4 trials**, one animal pair each:
    - setup; in the first trial, the game introduction and scale practice;
