@@ -625,9 +625,50 @@ async function showTeams(own) {
   return {top: order[0], tap: result};
 }
 
-async function stickerTask(memberGender) {
+// Liking check: the experimenter records how much the child likes the team
+// member of each team (really like ... really not like).
+async function likingScreen(memberGender, sides, header, say) {
   clear();
-  const sides = Math.random() < 0.5 ? [...CFG.TEAMS] : [...CFG.TEAMS].reverse();
+  helpIcon();
+  expText(header, 0, 0.455, {size: 0.024, width: 2 * HALF_W * 0.85});
+  const x = Math.min(0.32, HALF_W * 0.48), photo = 0.27, yPhoto = 0.24;
+  const answer = {moon: '', sun: ''};
+  const buttons = {moon: {}, sun: {}};
+  sides.forEach((team, i) => {
+    const xpos = [-x, x][i];
+    image(media.member(team, memberGender), xpos, yPhoto, photo, 'rounded');
+    image(media.group(team), xpos - photo / 2 - 0.02, yPhoto + photo / 2 - 0.03, 0.07);
+    CFG.LIKING.forEach((value, k) => {
+      buttons[team][value] = button(EXP.liking_options[value], xpos, 0.045 - k * 0.068,
+                                    {color: CFG.EXP_BUTTON_COLOR, width: 0.36});
+    });
+  });
+  const done = button(TXT.continue, 0, -0.3);
+  const skip = button(EXP.skip, HALF_W - 0.12, -0.45, {color: CFG.EXP_BUTTON_COLOR});
+  sayText(say, 0, -0.35, {size: 0.021});
+  const draw = () => {
+    CFG.TEAMS.forEach(team => Object.entries(buttons[team]).forEach(([value, b]) =>
+      setColor(b, answer[team] === value ? CFG.SELECTED_COLOR : CFG.EXP_BUTTON_COLOR)));
+    setEnabled(done, answer.moon !== '' && answer.sun !== '');
+  };
+  draw();
+  await released();
+  const t0 = performance.now();
+  CFG.TEAMS.forEach(team => Object.entries(buttons[team]).forEach(([value, b]) => onTap(b, () => {
+    answer[team] = answer[team] === value ? '' : value;
+    draw();
+  })));
+  await new Promise(resolve => {
+    onTap(done, resolve);
+    onTap(skip, resolve);
+  });
+  return {answer, rt: (performance.now() - t0) / 1000};
+}
+
+// Sticker task; `sides`: the team members from left to right (as on the
+// liking screen)
+async function stickerTask(memberGender, sides) {
+  clear();
   const photo = Math.min(0.42, HALF_W * 0.62);
   const x = Math.min(0.3, HALF_W * 0.45);
   const yPhoto = 0.07, yDots = 0.07 - photo / 2 - 0.06;
@@ -1177,13 +1218,22 @@ async function main() {
   const teams = await showTeams(childTeam);
 
   const memberGender = ['female', 'male'].includes(info.gender) ? info.gender : pick(['female', 'male']);
-  const [thisSg, pl] = CFG.MEMBER_WORDS[lang][memberGender];
+  const [thisSg, pl, him] = CFG.MEMBER_WORDS[lang][memberGender];
+  // liking check and sticker task: the same two members on the same sides
+  const memberSides = Math.random() < 0.5 ? [...CFG.TEAMS] : [...CFG.TEAMS].reverse();
+  const liking = await likingScreen(memberGender, memberSides, fmt(EXP.liking, {pl}),
+                                    fmt(EXP.liking_say, {this_sg: thisSg, him}));
   await experimenterScreen(fmt(EXP.sticker_intro, {n: CFG.N_STICKERS}), null,
                            fmt(EXP.sticker_intro_say, {pl, this_sg: thisSg}));
-  const stickers = await stickerTask(memberGender);
+  const stickers = await stickerTask(memberGender, memberSides);
+  const score = v => (v ? CFG.LIKING_SCORE[v] : '');
   const session = {child_team: childTeam, team_pic_left: group.left,
                    team_choice_rt: round(group.rt, 3), teams_pic_top: teams.top, ...teams.tap,
                    sticker_member_gender: memberGender, sticker_pic_left: stickers.left,
+                   liking_moon_member: liking.answer.moon, liking_sun_member: liking.answer.sun,
+                   liking_own: score(liking.answer[childTeam]),
+                   liking_other: score(liking.answer[otherTeam]),
+                   liking_rt: round(liking.rt, 3),
                    stickers_to_sun_member: stickers.count.sun,
                    stickers_to_moon_member: stickers.count.moon,
                    sticker_rt: round(stickers.rt, 3)};
