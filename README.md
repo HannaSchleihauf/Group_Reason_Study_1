@@ -27,8 +27,9 @@ All commands below are run from the `Study1_Web` folder.
    automatically), age and gender.
 2. **Introduction**: the child picks a team and taps their own team.
 3. **Sticker task** (5 stickers) with one gender-matched member of each team,
-   then the **liking check** (really like … really not like) with the same two
-   members.
+   then the **play question** with the same two members: who would the child
+   rather play with? The experimenter names them in the order of the pictures
+   (left to right, random) and taps the picture the child chooses.
 4. **4 trials**, one animal pair each:
    - setup; in the first trial, the game introduction and scale practice
      (really / kind of more of each animal, and don't know);
@@ -66,9 +67,9 @@ The main columns are listed below. The full list is in the docstring of
 |---|---|
 | `cb_list`, `order`, `swap_sides`, `reason_set` | counterbalancing; numeric / quality videos |
 | `child_team`, `team_tap_*` | the team chosen; tapping their own team |
-| `sticker_member_gender`, `sticker_pic_left` | gender of the two members; the team shown left (liking and sticker screens) |
-| `liking_moon_member`, `liking_sun_member` | really_like … really_not_like |
-| `liking_own`, `liking_other` | the same as scores (4 = really like … 1 = really not like) |
+| `sticker_member_gender`, `sticker_pic_left` | gender of the two members; the team shown left (sticker and play screens) |
+| `play_choice` | the team member the child would rather play with: moon / sun (empty if skipped) |
+| `play_team`, `play_rt` | own_team / other_team (empty if skipped); time to answer (s) |
 | `stickers_to_moon_member`, `stickers_to_sun_member` | sticker allocation |
 | `practice_*` | scale practice |
 | `trial`, `condition`, `group_type`, `reason_quality` | 1–4; ingroup / outgroup; strong / weak |

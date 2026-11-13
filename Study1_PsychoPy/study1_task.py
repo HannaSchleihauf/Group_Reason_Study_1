@@ -22,11 +22,10 @@ Procedure per session
      sticker_pic_left) is shown; the child gives 5 stickers to them and the
      experimenter records the numbers by tapping the 5 dots under each photo
      (stickers_to_sun_member, stickers_to_moon_member, 0-5 each).
-  1c. Liking check: the same two members (same sides); the experimenter
-     asks whether the child likes each of them and taps the answer under the
-     photo (liking_moon_member, liking_sun_member: really_like /
-     kind_of_like / kind_of_not_like / really_not_like; liking_own,
-     liking_other: 4 = really like ... 1 = really not like).
+  1c. Play question: the same two members (same sides); the experimenter
+     asks who the child would rather play with (naming the two in the order
+     of the pictures, left to right) and taps the picture the child chooses
+     (play_choice: moon / sun; play_team: own_team / other_team).
   2. Four trials. Each trial:
        a. Experimenter set-up screens (box colour + animal pair; open the
           first box). In round 1 only, the child first practises the scale:
@@ -187,9 +186,6 @@ OPEN_BOX = 5  # the box the experimenter opens in each trial (counted from the l
 BOX_DISPLAY = {'blue': '#2b2f8c', 'red': '#e2462c',  # as the boxes in the videos
                'green': '#4f97a3', 'yellow': '#f3c623'}
 N_STICKERS = 5  # stickers the child distributes between the two team members
-LIKING = ['really_like', 'kind_of_like', 'kind_of_not_like', 'really_not_like']
-LIKING_SCORE = {'really_like': 4, 'kind_of_like': 3, 'kind_of_not_like': 2,
-                'really_not_like': 1}  # liking_own / liking_other in the data
 SOUND_TEAM = STIM / 'sounds' / 'team_chosen.m4a'  # stereo AAC (mono WAV does not play)
 SOUND_WRONG = STIM / 'sounds' / 'wrong.m4a'  # other team tapped
 SOUND_CORRECT = STIM / 'sounds' / 'correct.m4a'  # solution screen: a row of boxes opened
@@ -278,18 +274,13 @@ EXP_TEXT = {
                           'on your team, the {own} team."\n[point to the {other} '
                           'team] "And here are some people who play on the other '
                           'team, the {other} team."',
-        'liking': 'Liking check: ask about each person and tap the child\'s '
-                  'answer under the picture.',
-        'liking_say': '[point to {this_sg} '
-                      'from your team] "Do you see {this_sg} from your team? Do you '
-                      'like or not like {him}?" "Okay."\n"And do you really like or '
-                      'kind of like {him}? / And do you really not like or kind of '
-                      'not like {him}?" "Okay."\n[the same for {this_sg} from the '
-                      'other team]\n[move the photos out of sight] "Later we\'ll hear '
-                      'from these two teams about the game we will play."',
-        'liking_options': {'really_like': 'really like', 'kind_of_like': 'kind of like',
-                           'kind_of_not_like': 'kind of not like',
-                           'really_not_like': 'really not like'},
+        'play': 'Play question: ask the question and tap the picture of the person '
+                'the child chooses (tap the other picture to change it).',
+        'play_say': '[point to {this_sg} from {whose1}, then to {this_sg} from '
+                    '{whose2}] "Who would you rather play with: {this_sg} from '
+                    '{whose1} or {this_sg} from {whose2}?" [let the child point]\n'
+                    '[move the photos out of sight] "Later we\'ll hear from these two '
+                    'teams about the game we will play."',
         'sticker_intro': 'Sticker task\n\nLeave one person of each team on the table '
                          '(same gender as the child: {pl}) and put {n} stickers on '
                          'the table. On the next '
@@ -449,19 +440,13 @@ EXP_TEXT = {
                           'in jouw team spelen, het {own}-team."\n[wijs naar het '
                           '{other}-team] "En hier zijn een paar mensen die in het '
                           'andere team spelen, het {other}-team."',
-        'liking': 'Sympathie: vraag naar ieder en tik het antwoord van het kind '
-                  'aan onder het plaatje.',
-        'liking_say': '[wijs naar '
-                      '{this_sg} van jouw team] "Zie je {this_sg} van jouw team? Vind '
-                      'je {him} aardig of niet aardig?" "Oké."\n"En vind je {him} '
-                      'heel aardig of een beetje aardig? / En vind je {him} helemaal '
-                      'niet aardig of een beetje niet aardig?" "Oké."\n[hetzelfde '
-                      'voor {this_sg} van het andere team]\n[haal de foto\'s uit '
-                      'het zicht] "Straks horen we van deze twee teams over het '
-                      'spelletje dat we gaan spelen."',
-        'liking_options': {'really_like': 'heel aardig', 'kind_of_like': 'een beetje aardig',
-                           'kind_of_not_like': 'een beetje niet aardig',
-                           'really_not_like': 'helemaal niet aardig'},
+        'play': 'Speelvraag: stel de vraag en tik op het plaatje van de persoon '
+                'die het kind kiest (tik op het andere plaatje om het te veranderen).',
+        'play_say': '[wijs naar {this_sg} van {whose1}, dan naar {this_sg} van '
+                    '{whose2}] "Met wie zou je liever spelen: met {this_sg} van '
+                    '{whose1} of met {this_sg} van {whose2}?" [laat het kind '
+                    'aanwijzen]\n[haal de foto\'s uit het zicht] "Straks horen we '
+                    'van deze twee teams over het spelletje dat we gaan spelen."',
         'sticker_intro': 'Stickertaak\n\nLaat van elk team één persoon van hetzelfde '
                          'geslacht als het kind op tafel liggen ({pl}) en leg {n} '
                          'stickers op tafel. Op het volgende '
@@ -1216,40 +1201,40 @@ def show_teams(own):
 # --------------------------------------------------------------------------
 # Sticker distribution
 # --------------------------------------------------------------------------
-def liking_screen(member_gender, sides, header, say):
-    """Liking check: one member of each team (photos in stimuli/members/,
-    same gender as the child; `sides` = teams from left to right) with four
-    answer buttons under each photo (really like ... really not like). The
-    experimenter taps the child's answer for each person (tapping it again
-    clears it); Continue once both are answered, or Skip (grey, bottom
-    right), which leaves unanswered ones empty.
-    Returns ({team: answer or ''}, rt)."""
-    x = min(0.32, HALF_W * 0.48)
-    photo, y_photo = 0.27, 0.24
+def play_screen(member_gender, sides, header, say):
+    """Play question: who would the child rather play with? One member of
+    each team (photos in stimuli/members/, same gender as the child; `sides`
+    = teams from left to right, as on the sticker screen). The experimenter
+    taps the picture of the person the child chooses (a frame marks it;
+    tapping the other picture changes the choice); Continue once a person is
+    chosen, or Skip (grey, bottom right), which leaves the answer empty.
+    Returns (team or '', rt)."""
+    x = min(0.3, HALF_W * 0.45)
+    photo, y_photo = min(0.36, HALF_W * 0.56), 0.11
     title = visual.TextStim(win, text=header, pos=(0, 0.455), height=0.024,
                             color=EXP_COLOR, italic=True, font=FONT,
                             wrapWidth=2 * HALF_W * 0.85)
     script = say_text(say, (0, -0.325), height=0.019)
-    stims, buttons = [], {}
+    stims, frames, areas = [], {}, {}
     for team, xpos in zip(sides, (-x, x)):
         stims.append(load_image(STIM / 'members' / f'{team}_{member_gender}.png',
                                 (xpos, y_photo), photo))
         stims += corner_masks((photo, photo), (xpos, y_photo), 12 * PX, BG_COLOR)
         stims.append(load_image(STIM / 'groups' / f'{team}.png',
-                                (xpos - photo / 2 - 0.02, y_photo + photo / 2 - 0.03), 0.07))
-        buttons[team] = {value: Button(EXP['liking_options'][value],
-                                       (xpos, 0.045 - k * 0.068),
-                                       color=EXP_BUTTON_COLOR, width=0.36)
-                         for k, value in enumerate(LIKING)}
+                                (xpos - photo / 2 - 0.02, y_photo + photo / 2 - 0.03), 0.08))
+        frames[team] = visual.Rect(win, width=photo + 0.03, height=photo + 0.03,
+                                   pos=(xpos, y_photo), lineColor=SELECTED_COLOR,
+                                   lineWidth=12, fillColor=None)
+        areas[team] = (xpos, photo / 2 + 0.015)
     done = Button(TXT['continue'], (0, -0.265))
     skip = Button(EXP['skip'], (HALF_W - 0.12, -0.45), color=EXP_BUTTON_COLOR)
-    answer = {team: '' for team in TEAMS}
+    choice = ''
 
     wait_release()
     clock = core.Clock()
     while True:
         check_quit()
-        done.enabled = all(answer.values())
+        done.enabled = choice != ''
         if mouse.getPressed()[0]:
             xy = mouse.getPos()
             if help_tapped(xy):
@@ -1257,28 +1242,24 @@ def liking_screen(member_gender, sides, header, say):
             if done.contains(xy) or skip.contains(xy):
                 rt = clock.getTime()
                 wait_release()
-                return answer, rt
-            for team in TEAMS:
-                for value, button in buttons[team].items():
-                    if button.contains(xy):
-                        answer[team] = '' if answer[team] == value else value
+                return choice, rt
+            for team, (xpos, half) in areas.items():
+                if abs(xy[0] - xpos) <= half and abs(xy[1] - y_photo) <= half:
+                    choice = team
             wait_release()
         title.draw()
+        if choice:  # first, so that the team logo is drawn over it
+            frames[choice].draw()
         for stim in stims:
             stim.draw()
-        for team in TEAMS:
-            for value, button in buttons[team].items():
-                button.color = SELECTED_COLOR if answer[team] == value else EXP_BUTTON_COLOR
-                button.draw()
         done.draw()
         skip.draw()
         draw_help(script)
         win.flip()
 
-
 def sticker_task(member_gender, sides):
     """One member of each team (photos in stimuli/members/, same gender as
-    the child; `sides` = teams from left to right, as on the liking screen)
+    the child; `sides` = teams from left to right, as on the play screen)
     with N_STICKERS dots under each photo. The experimenter taps
     the dots to record how many stickers the child gave to each person:
     tapping dot k sets the count to k, tapping the highest filled dot again
@@ -2105,7 +2086,7 @@ own_name = TEAM_NAMES[lang][child_team]
 # the child taps their own team
 teams_top, team_tap = show_teams(child_team)
 
-# Sticker distribution, then liking check: one member of each team, same
+# Sticker distribution, then play question: one member of each team, same
 # gender as the child, on the same sides on both screens
 if info['gender'] in ('female', 'male'):
     member_gender = info['gender']
@@ -2116,17 +2097,18 @@ member_sides = TEAMS[:] if random.random() < 0.5 else TEAMS[::-1]
 experimenter_screen(EXP['sticker_intro'].format(n=N_STICKERS, pl=pl),
                     say=EXP['sticker_intro_say'].format(pl=pl, this_sg=this_sg))
 stickers, sticker_left, sticker_rt = sticker_task(member_gender, member_sides)
-liking, liking_rt = liking_screen(member_gender, member_sides, EXP['liking'],
-                                  EXP['liking_say'].format(this_sg=this_sg, him=him))
+whose_side = [EXP['your_team' if team == child_team else 'other_team'] for team in member_sides]
+play, play_rt = play_screen(member_gender, member_sides, EXP['play'],
+                            EXP['play_say'].format(this_sg=this_sg, whose1=whose_side[0],
+                                                   whose2=whose_side[1]))
 session = {'child_team': child_team, 'team_pic_left': team_left,
            'team_choice_rt': round(team_rt, 3), 'teams_pic_top': teams_top,
            **team_tap,
            'sticker_member_gender': member_gender,
            'sticker_pic_left': sticker_left,
-           'liking_moon_member': liking['moon'], 'liking_sun_member': liking['sun'],
-           'liking_own': LIKING_SCORE.get(liking[child_team], ''),
-           'liking_other': LIKING_SCORE.get(liking[other_team], ''),
-           'liking_rt': round(liking_rt, 3),
+           'play_choice': play,
+           'play_team': '' if not play else ('own_team' if play == child_team else 'other_team'),
+           'play_rt': round(play_rt, 3),
            'stickers_to_sun_member': stickers['sun'],
            'stickers_to_moon_member': stickers['moon'],
            'sticker_rt': round(sticker_rt, 3),

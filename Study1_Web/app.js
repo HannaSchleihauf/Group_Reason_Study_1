@@ -675,48 +675,51 @@ async function showTeams(own) {
   return {top: order[0], tap: result};
 }
 
-// Liking check: the experimenter records how much the child likes the team
-// member of each team (really like ... really not like).
-async function likingScreen(memberGender, sides, header, say) {
+// Play question: who would the child rather play with? One member of each
+// team (same gender as the child; `sides` = teams from left to right, as on
+// the sticker screen). The experimenter taps the picture of the person the
+// child chooses (a frame marks it; tapping the other picture changes the
+// choice); Continue once a person is chosen, or Skip, which leaves it empty.
+async function playScreen(memberGender, sides, header, say) {
   clear();
   helpIcon();
   expText(header, 0, 0.455, {size: 0.024, width: 2 * HALF_W * 0.85});
-  const x = Math.min(0.32, HALF_W * 0.48), photo = 0.27, yPhoto = 0.24;
-  const answer = {moon: '', sun: ''};
-  const buttons = {moon: {}, sun: {}};
+  const x = Math.min(0.3, HALF_W * 0.45), photo = Math.min(0.36, HALF_W * 0.56), yPhoto = 0.11;
+  let choice = '';
+  const frames = {}, hits = {};
   sides.forEach((team, i) => {
     const xpos = [-x, x][i];
+    frames[team] = add('div');  // first, so that the team logo is drawn over it
+    Object.assign(frames[team].style, {width: `${U(photo + 0.03)}px`, height: `${U(photo + 0.03)}px`,
+                                       border: `12px solid ${CFG.SELECTED_COLOR}`,
+                                       borderRadius: '12px', pointerEvents: 'none'});
+    place(frames[team], xpos, yPhoto);
     image(media.member(team, memberGender), xpos, yPhoto, photo, 'rounded');
-    image(media.group(team), xpos - photo / 2 - 0.02, yPhoto + photo / 2 - 0.03, 0.07);
-    CFG.LIKING.forEach((value, k) => {
-      buttons[team][value] = button(EXP.liking_options[value], xpos, 0.045 - k * 0.068,
-                                    {color: CFG.EXP_BUTTON_COLOR, width: 0.36});
-    });
+    image(media.group(team), xpos - photo / 2 - 0.02, yPhoto + photo / 2 - 0.03, 0.08);
+    hits[team] = add('div', 'hit');
+    Object.assign(hits[team].style, {width: `${U(photo + 0.03)}px`, height: `${U(photo + 0.03)}px`});
+    place(hits[team], xpos, yPhoto);
   });
   const done = button(TXT.continue, 0, -0.265);
   const skip = button(EXP.skip, HALF_W - 0.12, -0.45, {color: CFG.EXP_BUTTON_COLOR});
   sayText(say, 0, -0.325, {size: 0.019});
   const draw = () => {
-    CFG.TEAMS.forEach(team => Object.entries(buttons[team]).forEach(([value, b]) =>
-      setColor(b, answer[team] === value ? CFG.SELECTED_COLOR : CFG.EXP_BUTTON_COLOR)));
-    setEnabled(done, answer.moon !== '' && answer.sun !== '');
+    CFG.TEAMS.forEach(team => { frames[team].style.display = choice === team ? '' : 'none'; });
+    setEnabled(done, choice !== '');
   };
   draw();
   await released();
   const t0 = performance.now();
-  CFG.TEAMS.forEach(team => Object.entries(buttons[team]).forEach(([value, b]) => onTap(b, () => {
-    answer[team] = answer[team] === value ? '' : value;
-    draw();
-  })));
+  CFG.TEAMS.forEach(team => onTap(hits[team], () => { choice = team; draw(); }));
   await new Promise(resolve => {
     onTap(done, resolve);
     onTap(skip, resolve);
   });
-  return {answer, rt: (performance.now() - t0) / 1000};
+  return {choice, rt: (performance.now() - t0) / 1000};
 }
 
 // Sticker task; `sides`: the team members from left to right (as on the
-// liking screen)
+// play screen)
 async function stickerTask(memberGender, sides) {
   clear();
   const photo = Math.min(0.42, HALF_W * 0.62);
@@ -1269,9 +1272,8 @@ async function main() {
   const minutes = () => round((performance.now() - sessionStart) / 60000, 2);
   const memberGender = ['female', 'male'].includes(info.gender) ? info.gender : pick(['female', 'male']);
   const [thisSg, pl, him] = CFG.MEMBER_WORDS[lang][memberGender];
-  // sticker task, then liking check: the same two members on the same sides
+  // sticker task, then play question: the same two members on the same sides
   const memberSides = Math.random() < 0.5 ? [...CFG.TEAMS] : [...CFG.TEAMS].reverse();
-  const score = v => (v ? CFG.LIKING_SCORE[v] : '');
   const otherOf = team => CFG.TEAMS.find(x => x !== team);
 
   // The session as a list of steps, one screen each (see runSteps); all
@@ -1286,18 +1288,19 @@ async function main() {
                                       fmt(EXP.sticker_intro_say, {pl, this_sg: thisSg})));
   steps.push(async () => { S.stickers = await stickerTask(memberGender, memberSides); });
   steps.push(async () => {
-    S.liking = await likingScreen(memberGender, memberSides, EXP.liking,
-                                  fmt(EXP.liking_say, {this_sg: thisSg, him}));
+    // the two members are named in the order of the pictures (left to right)
+    const whose = memberSides.map(t => EXP[t === S.group.team ? 'your_team' : 'other_team']);
+    S.play = await playScreen(memberGender, memberSides, EXP.play,
+                              fmt(EXP.play_say, {this_sg: thisSg, whose1: whose[0], whose2: whose[1]}));
   });
   const sessionCols = () => {
     const childTeam = S.group.team, otherTeam = otherOf(childTeam);
     const cols = {child_team: childTeam, team_pic_left: S.group.left,
                   team_choice_rt: round(S.group.rt, 3), teams_pic_top: S.teams.top, ...S.teams.tap,
                   sticker_member_gender: memberGender, sticker_pic_left: S.stickers.left,
-                  liking_moon_member: S.liking.answer.moon, liking_sun_member: S.liking.answer.sun,
-                  liking_own: score(S.liking.answer[childTeam]),
-                  liking_other: score(S.liking.answer[otherTeam]),
-                  liking_rt: round(S.liking.rt, 3),
+                  play_choice: S.play.choice,
+                  play_team: S.play.choice ? (S.play.choice === childTeam ? 'own_team' : 'other_team') : '',
+                  play_rt: round(S.play.rt, 3),
                   stickers_to_sun_member: S.stickers.count.sun,
                   stickers_to_moon_member: S.stickers.count.moon,
                   sticker_rt: round(S.stickers.rt, 3)};

@@ -41,18 +41,6 @@ const CFG = {
   "yellow": "#f3c623"
  },
  "N_STICKERS": 5,
- "LIKING": [
-  "really_like",
-  "kind_of_like",
-  "kind_of_not_like",
-  "really_not_like"
- ],
- "LIKING_SCORE": {
-  "really_like": 4,
-  "kind_of_like": 3,
-  "kind_of_not_like": 2,
-  "really_not_like": 1
- },
  "PRACTICE_MIDDLE": 0.1,
  "PRACTICE_SKIP_AFTER": 3,
  "PRACTICE_KIND_OF_STRENGTH": 0.3,
@@ -141,14 +129,8 @@ const CFG = {
    "tap_team_say": "\"Can you show me your team? Tap on your team!\"",
    "chosen_say": "\"Okay! So I have a couple of things for you. First, I have a special {team} team sticker for you.\" [give the sticker]\n\"I also have a special {team} team hat for you.\" [give the hat]\n\"Great, now you are part of the {team} team!\"",
    "show_teams_say": "[point to the {own} team] \"Here are some people who play on your team, the {own} team.\"\n[point to the {other} team] \"And here are some people who play on the other team, the {other} team.\"",
-   "liking": "Liking check: ask about each person and tap the child's answer under the picture.",
-   "liking_say": "[point to {this_sg} from your team] \"Do you see {this_sg} from your team? Do you like or not like {him}?\" \"Okay.\"\n\"And do you really like or kind of like {him}? / And do you really not like or kind of not like {him}?\" \"Okay.\"\n[the same for {this_sg} from the other team]\n[move the photos out of sight] \"Later we'll hear from these two teams about the game we will play.\"",
-   "liking_options": {
-    "really_like": "really like",
-    "kind_of_like": "kind of like",
-    "kind_of_not_like": "kind of not like",
-    "really_not_like": "really not like"
-   },
+   "play": "Play question: ask the question and tap the picture of the person the child chooses (tap the other picture to change it).",
+   "play_say": "[point to {this_sg} from {whose1}, then to {this_sg} from {whose2}] \"Who would you rather play with: {this_sg} from {whose1} or {this_sg} from {whose2}?\" [let the child point]\n[move the photos out of sight] \"Later we'll hear from these two teams about the game we will play.\"",
    "sticker_intro": "Sticker task\n\nLeave one person of each team on the table (same gender as the child: {pl}) and put {n} stickers on the table. On the next screen the child gives them to the two team members; tap the dots under each person to record how many each gets.",
    "sticker_intro_say": "\"Now I will ask you some questions about the two teams. Let's move these people out of the way.\" [leave one person of each team]\n\"Now I have some stickers here, let's see how many I have. I have 1, 2, 3, 4, 5 stickers. And now you can tell me how many stickers to give each of these two {pl}.\"\n[next screen, point to each person]\n\"So out of these 5 stickers, how many stickers should I give to {this_sg} from your team?\"\n\"Okay, and how many stickers should I give to {this_sg} from the other team?\"\n[move the stickers out of sight]",
    "setup_first": "Round 1 of {n} - game introduction\n\nPut the {k} {color} boxes in front of the child and introduce the two animals ({pl_l} / {pl_r}).",
@@ -224,14 +206,8 @@ const CFG = {
    "tap_team_say": "\"Kun je mij jouw team laten zien? Tik op jouw team!\"",
    "chosen_say": "\"Oké! Ik heb een paar dingen voor jou. Eerst heb ik een speciale {team}-team sticker voor jou.\" [geef de sticker]\n\"Ik heb ook een speciale {team}-team pet voor jou.\" [geef de pet]\n\"Top, nu hoor jij bij het {team}-team!\"",
    "show_teams_say": "[wijs naar het {own}-team] \"Hier zijn een paar mensen die in jouw team spelen, het {own}-team.\"\n[wijs naar het {other}-team] \"En hier zijn een paar mensen die in het andere team spelen, het {other}-team.\"",
-   "liking": "Sympathie: vraag naar ieder en tik het antwoord van het kind aan onder het plaatje.",
-   "liking_say": "[wijs naar {this_sg} van jouw team] \"Zie je {this_sg} van jouw team? Vind je {him} aardig of niet aardig?\" \"Oké.\"\n\"En vind je {him} heel aardig of een beetje aardig? / En vind je {him} helemaal niet aardig of een beetje niet aardig?\" \"Oké.\"\n[hetzelfde voor {this_sg} van het andere team]\n[haal de foto's uit het zicht] \"Straks horen we van deze twee teams over het spelletje dat we gaan spelen.\"",
-   "liking_options": {
-    "really_like": "heel aardig",
-    "kind_of_like": "een beetje aardig",
-    "kind_of_not_like": "een beetje niet aardig",
-    "really_not_like": "helemaal niet aardig"
-   },
+   "play": "Speelvraag: stel de vraag en tik op het plaatje van de persoon die het kind kiest (tik op het andere plaatje om het te veranderen).",
+   "play_say": "[wijs naar {this_sg} van {whose1}, dan naar {this_sg} van {whose2}] \"Met wie zou je liever spelen: met {this_sg} van {whose1} of met {this_sg} van {whose2}?\" [laat het kind aanwijzen]\n[haal de foto's uit het zicht] \"Straks horen we van deze twee teams over het spelletje dat we gaan spelen.\"",
    "sticker_intro": "Stickertaak\n\nLaat van elk team één persoon van hetzelfde geslacht als het kind op tafel liggen ({pl}) en leg {n} stickers op tafel. Op het volgende scherm verdeelt het kind ze over de twee teamleden; tik op de bolletjes onder elke persoon om te noteren hoeveel ieder krijgt.",
    "sticker_intro_say": "\"Nu ga ik je een paar vragen stellen over de twee teams. Laten we deze mensen even aan de kant zetten.\" [laat van elk team één persoon liggen]\n\"Ik heb hier wat stickers, laten we eens kijken hoeveel ik er heb. Ik heb 1, 2, 3, 4, 5 stickers. Nu mag jij mij vertellen hoeveel stickers ik aan elk van deze twee {pl} moet geven.\"\n[volgend scherm, wijs naar elke persoon]\n\"Hoeveel van deze 5 stickers moet ik geven aan {this_sg} van jouw team?\"\n\"Oké, en hoeveel stickers moet ik geven aan {this_sg} van het andere team?\"\n[haal de stickers uit het zicht]",
    "setup_first": "Ronde 1 van {n} - introductie van het spel\n\nZet de {k} {color} doosjes voor het kind neer en introduceer de twee dieren ({pl_l} / {pl_r}).",
