@@ -76,8 +76,8 @@ The main columns are listed below. The full list is in the docstring of
 | `belief1_choice`, `claimed_animal`, `video_team`, `video_file` | the child's initial animal; the team claims the other one |
 | `check<k>_*`, `check_n_attempts`, `check_passed` | check answers per try |
 | `rating1_raw`, `rating2_raw` | scale position, −100 (left) … 100 (right) |
-| `rating*_toward_claim`, `change_toward_claim` | positive = toward the animal the team claimed |
-| `solution_animal` | the animal shown as the majority on the solution screen |
+| `rating*_toward_claim` | the same, positive = toward the animal the team claimed |
+| `belief_revision` | second minus first rating (`rating2_toward_claim` − `rating1_toward_claim`): positive = moved toward the team's claim, negative = away (−200 … 200) |
 
 ## Setup
 

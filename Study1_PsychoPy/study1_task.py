@@ -72,7 +72,7 @@ Procedure per session
      (second rating; first choice if it was exactly in the middle). Tapping
      a row opens the boxes: SOLUTION_MAJORITY of the 10 hold the child's
      animal, so the child is always right (chime and a green tick; the happy
-     jingle when all are open). Data: solution_animal per trial.
+     jingle when all are open).
   On both scales the exact middle (50) is marked by a "?" under the handle;
   positions within MIDDLE_SNAP of the middle snap to it.
 
@@ -136,7 +136,9 @@ Data
   all rows at the end; empty if the session was stopped early).
   Ratings are stored from -100 to +100. "rating*_raw" is screen-based
   (-100 = far left, +100 = far right); "rating*_toward_claim" is positive when
-  the marker is on the side of the animal the team claimed.
+  the marker is on the side of the animal the team claimed. belief_revision =
+  rating2_toward_claim - rating1_toward_claim (positive = moved toward the
+  team's claim, negative = away from it; -200 ... +200).
 
 Press ESC at any time to quit (data of finished trials are already saved).
 Press M to show/hide the mouse cursor (hidden by default, see SHOW_CURSOR).
@@ -189,7 +191,7 @@ N_STICKERS = 5  # stickers the child distributes between the two team members
 SOUND_TEAM = STIM / 'sounds' / 'team_chosen.m4a'  # stereo AAC (mono WAV does not play)
 SOUND_WRONG = STIM / 'sounds' / 'wrong.m4a'  # other team tapped
 SOUND_CORRECT = STIM / 'sounds' / 'correct.m4a'  # solution screen: a row of boxes opened
-PRACTICE_MIDDLE = 0.1  # practice "don't know": right if this close to the middle (-1..1)
+PRACTICE_MIDDLE = 0.15  # practice "don't know": right if this close to the middle (-1..1)
 PRACTICE_SKIP_AFTER = 3  # wrong practice answers before the experimenter can skip
 PRACTICE_KIND_OF_STRENGTH = 0.3  # practice "kind of": animal size/solidity in the bubble (0..1)
 BUBBLE_IN_TEST = False  # True: thinking child (as in the practice) also on the test sliders
@@ -216,6 +218,7 @@ TEXT = {  # text the child sees
            'watch': 'Watch the video', 'replay': 'Replay',
            'stickers': 'You have 5 stickers. How many do you want to give '
                        'to each of them?',
+           'play': 'Who would you rather play with?',
            'teams': 'This is the {first} team and this is the {second} team.',
            'practice_show': 'Let me show you!',
            'solution': "Let's see what was in the boxes!",
@@ -232,6 +235,7 @@ TEXT = {  # text the child sees
            'watch': 'Kijk naar het filmpje', 'replay': 'Opnieuw',
            'stickers': 'Je hebt 5 stickers. Hoeveel wil je aan ieder van '
                        'hen geven?',
+           'play': 'Met wie zou je liever spelen?',
            'teams': 'Dit is het {first}-team en dit is het {second}-team.',
            'practice_show': 'Ik laat het je zien!',
            'solution': 'Laten we kijken wat er in de doosjes zat!',
@@ -1214,8 +1218,11 @@ def play_screen(member_gender, sides, header, say):
     title = visual.TextStim(win, text=header, pos=(0, 0.455), height=0.024,
                             color=EXP_COLOR, italic=True, font=FONT,
                             wrapWidth=2 * HALF_W * 0.85)
+    question = visual.TextStim(win, text=TXT['play'], pos=(0, 0.375),
+                               height=42 * PX, color='#111111', bold=True,
+                               font=FONT, wrapWidth=2 * HALF_W * 0.9)
     script = say_text(say, (0, -0.325), height=0.019)
-    stims, frames, areas = [], {}, {}
+    stims, frames, areas = [question], {}, {}
     for team, xpos in zip(sides, (-x, x)):
         stims.append(load_image(STIM / 'members' / f'{team}_{member_gender}.png',
                                 (xpos, y_photo), photo))
@@ -2228,8 +2235,8 @@ for t in trials:
         'rating2_rt': round(rating2['rt'], 3),
         'rating2_first_touch_rt': rounded(rating2['first_touch_rt']),
         'rating2_n_touches': rating2['n_touches'],
-        'change_toward_claim': round(sign * (r2 - r1) * 100, 1),
-        'solution_animal': final_animal,
+        # belief revision: second minus first rating, positive = toward the claim
+        'belief_revision': round(sign * (r2 - r1) * 100, 1),
         'minutes_since_start': round(session_clock.getTime() / 60, 2),
         'session_duration_min': '',  # filled in at the end (add_session_duration)
     })

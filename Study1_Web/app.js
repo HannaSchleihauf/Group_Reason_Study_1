@@ -684,6 +684,7 @@ async function playScreen(memberGender, sides, header, say) {
   clear();
   helpIcon();
   expText(header, 0, 0.455, {size: 0.024, width: 2 * HALF_W * 0.85});
+  text(TXT.play, 0, 0.375, {size: 42 * PX, bold: true, width: 2 * HALF_W * 0.9});
   const x = Math.min(0.3, HALF_W * 0.45), photo = Math.min(0.36, HALF_W * 0.56), yPhoto = 0.11;
   let choice = '';
   const frames = {}, hits = {};
@@ -1434,8 +1435,8 @@ async function main() {
         rating2_rt: round(rating2.rt, 3),
         rating2_first_touch_rt: rt3(rating2.first_touch_rt),
         rating2_n_touches: rating2.n_touches,
-        change_toward_claim: round(sign * (r2 - r1) * 100, 1),
-        solution_animal: T().final_animal,
+        // belief revision: second minus first rating, positive = toward the claim
+        belief_revision: round(sign * (r2 - r1) * 100, 1),
         minutes_since_start: minutes(),
         session_duration_min: '',  // filled in at the end
       });
