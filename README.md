@@ -33,7 +33,9 @@ All commands below are run from the `Study1_Web` folder.
 4. **4 trials**, one animal pair each:
    - setup; in the first trial, the game introduction and scale practice
      (really / kind of more of each animal, and don't know);
-   - the experimenter opens the fifth box from the left and shows the animal;
+   - the experimenter opens the fifth box from the left and shows the animal
+     (counterbalanced: the left animal in 2 trials, the right one in 2, random
+     order; shown only on the experimenter screens);
    - **initial belief** (which animal, then how sure);
    - **one video**: the child's own team or the other team claims the animal
      the child did *not* choose, with a strong or a weak reason;
@@ -73,7 +75,9 @@ The main columns are listed below. The full list is in the docstring of
 | `stickers_to_moon_member`, `stickers_to_sun_member` | sticker allocation |
 | `practice_*` | scale practice |
 | `trial`, `condition`, `group_type`, `reason_quality` | 1–4; ingroup / outgroup; strong / weak |
+| `open_box_animal`, `open_box_side` | the animal in the fifth box (opened before the first rating); left / right |
 | `belief1_choice`, `claimed_animal`, `video_team`, `video_file` | the child's initial animal; the team claims the other one |
+| `belief1_choice_is_open_box_animal` | TRUE if the child first chose the animal from the opened box |
 | `check<k>_*`, `check_n_attempts`, `check_passed` | check answers per try |
 | `rating1_raw`, `rating2_raw` | scale position, −100 (left) … 100 (right) |
 | `rating*_toward_claim` | the same, positive = toward the animal the team claimed |

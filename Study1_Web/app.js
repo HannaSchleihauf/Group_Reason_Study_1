@@ -396,13 +396,17 @@ function makeTrials(cbList) {
   const conditionOrder = CFG.LATIN[idx % 4].map(i => CFG.CONDITIONS[i]);
   const boxOrder = CFG.LATIN[Math.floor(idx / 4) % 4].map(i => CFG.BOX_ORDER[i]);
   swapSides = idx >= 16;
+  // the animal in the box the experimenter opens: the left animal in half of
+  // the rounds, the right one in the other half, in random order
+  const openSides = shuffle(conditionOrder.map((_, i) => (i % 2 ? 'right' : 'left')));
   return conditionOrder.map((cond, i) => {
     const box = boxOrder[i];
     const pair = CFG.BOXES[box];
     const [left, right] = swapSides ? [pair[1], pair[0]] : pair;
     const [group, quality] = cond.split('_');
     return {trial: i + 1, condition: cond, group_type: group, reason_quality: quality,
-            box_color: box, animal_left: left, animal_right: right};
+            box_color: box, animal_left: left, animal_right: right,
+            open_box_animal: openSides[i] === 'left' ? left : right, open_box_side: openSides[i]};
   });
 }
 
@@ -535,14 +539,23 @@ function startForm() {
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
-// With color, a row of closed boxes; with opened, box OPEN_BOX is open, with an arrow.
-async function experimenterScreen(str, color = null, say = null, opened = false) {
+// With color, a row of closed boxes; with opened, box OPEN_BOX is open, with an arrow;
+// with animal, a picture of that animal above box OPEN_BOX (the animal in that box).
+async function experimenterScreen(str, color = null, say = null, opened = false, animal = null) {
   clear();
   helpIcon();
   expText(str, 0, 0.4, {size: 0.034, anchor: 'top', width: 2 * HALF_W * 0.85});
   sayText(say, 0, 0.16);
   expText(EXP.tap, 0, -0.44, {size: 0.026});
   if (color) boxRow(color, {y: -0.33, nOpen: opened ? 1 : 0, arrow: opened, openAt: CFG.OPEN_BOX - 1});
+  if (color && animal) {
+    // x of box OPEN_BOX in the row, as in boxRow
+    const n = CFG.N_BOXES, width = Math.min(n * 0.1 + (n - 1) * 0.02, 2 * HALF_W * 0.92);
+    const w = width / (n + (n - 1) * 0.2);
+    // above the arrow, or (closed boxes) right above the box
+    const y = opened ? -0.33 + w * 0.62 * 3.1 + 0.075 : -0.21;
+    image(media.animal(animal), (CFG.OPEN_BOX - 1 - (n - 1) / 2) * 1.2 * w, y, 0.12);
+  }
   await released();
   const me = screenId;  // after going back, a tap no longer counts for this screen
   await new Promise(resolve => stage.addEventListener('pointerdown', function handler(event) {
@@ -1124,13 +1137,10 @@ async function checkScreen(team, whose, left, right, claimed, box, quality, atte
   };
   sections.belief.push(dontKnow.belief);
   sections.reason.push(dontKnow.reason);
-  const prompted = {self: button(EXP.said_self, -0.17, -0.31, {color: CFG.EXP_BUTTON_COLOR}),
-                    prompted: button(EXP.said_prompted, 0.17, -0.31, {color: CFG.EXP_BUTTON_COLOR})};
-  sections.end.push(...Object.values(prompted));
   const done = button(TXT.continue, 0, -0.42);
   sayText(`${fmt(EXP.if_right_belief_say, {whose, c})}\n${ifRight}`, 0, -0.455, {size: 0.019});
 
-  const answer = {belief: null, reason: null, prompted: ''};
+  const answer = {belief: null, reason: null};
   const step = () => (answer.belief === null ? 'belief' : answer.reason === null ? 'reason' : 'end');
   const draw = () => {
     const now = step();
@@ -1144,8 +1154,6 @@ async function checkScreen(team, whose, left, right, claimed, box, quality, atte
       });
       setColor(dontKnow[q], answer[q] === 'dont_know' ? CFG.SELECTED_COLOR : CFG.EXP_BUTTON_COLOR);
     });
-    Object.entries(prompted).forEach(([value, b]) =>
-      setColor(b, answer.prompted === value ? CFG.SELECTED_COLOR : CFG.EXP_BUTTON_COLOR));
     setEnabled(done, now === 'end');
   };
   draw();
@@ -1161,17 +1169,12 @@ async function checkScreen(team, whose, left, right, claimed, box, quality, atte
     Object.entries(options[q]).forEach(([value, o]) => onTap(o.hit, () => choose(q, value)));
     onTap(dontKnow[q], () => choose(q, 'dont_know'));
   });
-  Object.entries(prompted).forEach(([value, b]) => onTap(b, () => {
-    if (step() !== 'end') return;
-    answer.prompted = answer.prompted === value ? '' : value;
-    draw();
-  }));
   await new Promise(resolve => onTap(done, resolve));
   const rt = (performance.now() - t0) / 1000;
   const beliefCorrect = answer.belief === claimed;
   const reasonCorrect = answer.reason === rightReason;
   return {belief: answer.belief, belief_correct: beliefCorrect, reason: answer.reason,
-          reason_correct: reasonCorrect, reason_prompted: answer.prompted,
+          reason_correct: reasonCorrect,
           passed: beliefCorrect && reasonCorrect, rt: round(rt, 3)};
 }
 
@@ -1321,7 +1324,8 @@ async function main() {
     const names = {pl_l: CFG.PLURALS[lang][left], pl_r: CFG.PLURALS[lang][right],
                    a_l: withArticle(left), a_r: withArticle(right),
                    l: animalName(left).toLowerCase(), r: animalName(right).toLowerCase(),
-                   the_l: theAnimal(left), the_r: theAnimal(right)};
+                   the_l: theAnimal(left), the_r: theAnimal(right),
+                   a_o: withArticle(t.open_box_animal)};
     const firstRound = t.trial === 1;
     const setup = firstRound ? 'setup_first' : 'setup';
     const header = s => fmt(EXP.header, {t: t.trial, n: trials.length, s,
@@ -1339,12 +1343,12 @@ async function main() {
     steps.push(() => experimenterScreen(
       fmt(EXP[setup], {t: t.trial, n: trials.length, k: CFG.N_BOXES,
                        color: lang === 'nl' ? CFG.COLOR_ADJ_NL[box] : box, ...names}),
-      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names)));
+      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names), false, t.open_box_animal));
     // Practice with the scale (first round only), then open the box
     if (firstRound) steps.push(...practiceSteps(left, right, names));
-    steps.push(() => experimenterScreen(EXP.open_box, CFG.BOX_DISPLAY[box],
-                                        (firstRound ? `${EXP.train_end_say}\n` : '') + EXP.open_box_say,
-                                        true));
+    steps.push(() => experimenterScreen(fmt(EXP.open_box, names), CFG.BOX_DISPLAY[box],
+                                        (firstRound ? `${EXP.train_end_say}\n` : '') + fmt(EXP.open_box_say, names),
+                                        true, t.open_box_animal));
 
     // Initial belief: binary choice, then how sure on the scale
     steps.push(async () => {
@@ -1423,6 +1427,7 @@ async function main() {
         belief1_choice: choice,
         belief1_choice_side: choice === left ? 'left' : 'right',
         belief1_choice_rt: round(rating1.choice_rt, 3),
+        belief1_choice_is_open_box_animal: choice === t.open_box_animal,
         video_team: videoTeam(), claimed_animal: claimed(),
         video_file: `${vid()}.mp4`, video_missing: videos[videos.length - 1].missing,
         video_n_plays: videos.reduce((sum, v) => sum + v.plays, 0),

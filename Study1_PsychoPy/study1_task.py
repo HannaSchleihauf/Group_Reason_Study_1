@@ -28,7 +28,11 @@ Procedure per session
      (play_choice: moon / sun; play_team: own_team / other_team).
   2. Four trials. Each trial:
        a. Experimenter set-up screens (box colour + animal pair; open the
-          first box). In round 1 only, the child first practises the scale:
+          fifth box). Which animal is in the fifth box is counterbalanced:
+          the left animal in half of the rounds, the right one in the other
+          half, random order (shown only on the experimenter screens).
+          Data: open_box_animal, open_box_side, and
+          belief1_choice_is_open_box_animal. In round 1 only, the child first practises the scale:
           the experimenter demonstrates it ("Let me show you!"; a thinking
           child's bubble shows the animal the marker points to, larger and
           more solid the closer it is to that end, "?" in the middle), then the
@@ -58,13 +62,11 @@ Procedure per session
           what does the team believe (tap one of the two animals) and why
           (numeric version: boxes with 2 or 4 open; quality version: eyes =
           they looked, speaking head = someone told them); "doesn't know"
-          for both; and whether the child said the reason themselves or
-          after asking. If belief or reason is wrong, the video is shown
+          for both. If belief or reason is wrong, the video is shown
           again and the questions are repeated (up to MAX_CHECKS attempts).
           Per attempt k the data has check<k>_belief, _belief_correct,
           _reason (2_boxes / 4_boxes / looked / told / dont_know),
-          _reason_correct, _reason_prompted (self / prompted / empty),
-          _passed, _rt.
+          _reason_correct, _passed, _rt.
        d. Second belief rating; the handle starts at the first answer (a grey
           line and "your first answer" mark it; the text disappears as soon
           as the child moves the handle)
@@ -303,7 +305,7 @@ EXP_TEXT = {
                              'from the other team?"\n[move the stickers out of sight]',
         'setup_first': 'Round 1 of {n} - game introduction\n\nPut the {k} {color} '
                        'boxes in front of the child and introduce the two animals '
-                       '({pl_l} / {pl_r}).',
+                       '({pl_l} / {pl_r}).\nPut {a_o} in the fifth box from the left.',
         'setup_first_say': '"Now we can play the game! The game today involves a '
                            'zoo. See, here is the zoo! Many animals are part of the '
                            'zoo, including some {pl_l} [hold up the {l}] and {pl_r} '
@@ -314,7 +316,8 @@ EXP_TEXT = {
                            ' I don\'t know whether there are more {pl_l} or more {pl_r} in the boxes."',
         'setup': 'Round {t} of {n}\n\nClear away the boxes, logo and toy animals of '
                  'the last round. Put the {k} {color} boxes in front of the child and '
-                 'introduce the two animals ({pl_l} / {pl_r}).',
+                 'introduce the two animals ({pl_l} / {pl_r}).\nPut {a_o} in the fifth '
+                 'box from the left.',
         'setup_say': '"Great job! Now we will play again. These boxes have {pl_l} '
                      '[hold up the {l}] and {pl_r} [hold up the {r}] in them." [let the '
                      'child name both animals]\n'
@@ -352,11 +355,11 @@ EXP_TEXT = {
         'train_middle_say': '"Good, and if you didn\'t know, where would you place '
                             'your marker?"',
         'train_end_say': '"Okay great, I will bring the tablet back in a moment."',
-        'open_box': 'Put the tablet aside. Open the fifth box from the left, show the child the '
-                    'animal and close the box again.\nThen put the tablet in front of '
-                    'the child.',
+        'open_box': 'Put the tablet aside. Open the fifth box from the left (there is '
+                    '{a_o} in it), show the child the animal and close the box '
+                    'again.\nThen put the tablet in front of the child.',
         'open_box_say': '"I am going to open one box for you. Let\'s see what is in '
-                        'it!" [open the box]\n"Look, there is a ... in this box!"',
+                        'it!" [open the box]\n"Look, there is {a_o} in this box!"',
         'ask_binary_say': '"Okay, so what do you think? Do you think there are more '
                           '{pl_l} or more {pl_r} in the boxes?"',
         'ask_sure_say': '"And now you can tell me how sure you are that there are more '
@@ -399,7 +402,6 @@ EXP_TEXT = {
         'if_right_number_say': 'If right: "That\'s right, they opened {n} boxes and '
                                'they were all {c}."',
         'dont_know': "Doesn't know",
-        'said_self': 'Said it themselves', 'said_prompted': 'After asking',
         'reason_looked': 'looked in the boxes', 'reason_told': 'someone told them',
         'if_right_reason_say': 'If right: "That\'s right!"',
         'repeat': 'The answer was not correct. The video is shown again.',
@@ -470,7 +472,8 @@ EXP_TEXT = {
                              'stickers uit het zicht]',
         'setup_first': 'Ronde 1 van {n} - introductie van het spel\n\nZet de {k} '
                        '{color} doosjes voor het kind neer en introduceer de twee '
-                       'dieren ({pl_l} / {pl_r}).',
+                       'dieren ({pl_l} / {pl_r}).\nDoe {a_o} in het vijfde doosje '
+                       'van links.',
         'setup_first_say': '"Nu kunnen we het spelletje gaan spelen! Het spelletje '
                            'van vandaag gaat over een dierentuin. Kijk, hier is de '
                            'dierentuin! In de dierentuin wonen veel dieren, zoals '
@@ -481,7 +484,8 @@ EXP_TEXT = {
                            'één dier, {a_l} of {a_r}. Ik weet niet of er meer {pl_l} of meer {pl_r} in de doosjes zitten."',
         'setup': 'Ronde {t} van {n}\n\nRuim de doosjes, het logo en de '
                  'speelgoeddieren van de vorige ronde op. Zet de {k} {color} doosjes '
-                 'voor het kind neer en introduceer de twee dieren ({pl_l} / {pl_r}).',
+                 'voor het kind neer en introduceer de twee dieren ({pl_l} / {pl_r}).'
+                 '\nDoe {a_o} in het vijfde doosje van links.',
         'setup_say': '"Goed gedaan! Nu gaan we nog een keer spelen, met nieuwe '
                      'doosjes en nieuwe dieren. In deze doosjes zitten {pl_l} [houd '
                      '{the_l} omhoog] en {pl_r} [houd {the_r} omhoog]." [laat het kind '
@@ -521,12 +525,12 @@ EXP_TEXT = {
         'train_middle_say': '"Goed zo, en als je het niet zou weten, waar zou je je '
                             'pijltje dan zetten?"',
         'train_end_say': '"Super, ik pak de tablet zo weer terug."',
-        'open_box': 'Leg de tablet aan de kant. Maak het vijfde doosje van links open, '
-                    'laat het dier zien en doe het doosje weer dicht.\nLeg dan de '
-                    'tablet voor het kind neer.',
+        'open_box': 'Leg de tablet aan de kant. Maak het vijfde doosje van links open '
+                    '(daar zit {a_o} in), laat het dier zien en doe het doosje weer '
+                    'dicht.\nLeg dan de tablet voor het kind neer.',
         'open_box_say': '"Ik ga één doosje voor je openmaken. Eens kijken wat erin '
-                        'zit!" [maak het doosje open]\n"Kijk, in dit doosje zit een '
-                        '...!"',
+                        'zit!" [maak het doosje open]\n"Kijk, in dit doosje zit '
+                        '{a_o}!"',
         'ask_binary_say': '"Oké, wat denk jij? Denk je dat er meer {pl_l} of meer '
                           '{pl_r} in de doosjes zitten?"',
         'ask_sure_say': '"Oké. En nu mag je mij vertellen hoe zeker je ervan bent dat '
@@ -571,7 +575,6 @@ EXP_TEXT = {
         'if_right_number_say': 'Als goed: "Dat klopt, ze hebben {n} doosjes '
                                'opengemaakt en daar zaten allemaal {c} in."',
         'dont_know': 'Weet het niet',
-        'said_self': 'Zelf gezegd', 'said_prompted': 'Na doorvragen',
         'reason_looked': 'in de doosjes gekeken', 'reason_told': 'iemand heeft het verteld',
         'if_right_reason_say': 'Als goed: "Dat klopt!"',
         'repeat': 'Het antwoord was niet juist. Het filmpje wordt nog een keer '
@@ -612,7 +615,7 @@ PLURALS = {'en': {'elephant': 'elephants', 'lion': 'lions', 'dog': 'dogs',
                   'cow': 'koeien', 'pig': 'varkens'}}
 MAX_CHECKS = 3  # check-question attempts per trial: the video is shown at most 3 times (2 replays)
 CHECK_FIELDS = ['belief', 'belief_correct', 'reason', 'reason_correct',
-                'reason_prompted', 'passed', 'rt']
+                'passed', 'rt']
 BOXES_OPENED = {'strong': 4, 'weak': 2}  # boxes the team opened in the numeric videos
 NUMBER_WORDS = {'en': {2: 'two', 4: 'four'}, 'nl': {2: 'twee', 4: 'vier'}}
 MEMBER_WORDS = {  # (this one, plural, him/her)
@@ -788,14 +791,22 @@ condition_order = [CONDITIONS[i] for i in LATIN[idx % 4]]
 box_order = [BOX_ORDER[i] for i in LATIN[(idx // 4) % 4]]
 swap_sides = idx >= 16
 
+# the animal in the box the experimenter opens: the left animal in half of
+# the rounds, the right one in the other half, in random order
+open_sides = (['left', 'right'] * len(condition_order))[:len(condition_order)]
+random.shuffle(open_sides)
+
 trials = []
-for n, (cond, box) in enumerate(zip(condition_order, box_order), start=1):
+for n, (cond, box, open_side) in enumerate(zip(condition_order, box_order, open_sides),
+                                           start=1):
     pair = BOXES[box]
     left, right = (pair[1], pair[0]) if swap_sides else pair
     group, quality = cond.split('_')
     trials.append({'trial': n, 'condition': cond, 'group_type': group,
                    'reason_quality': quality, 'box_color': box,
-                   'animal_left': left, 'animal_right': right})
+                   'animal_left': left, 'animal_right': right,
+                   'open_box_animal': left if open_side == 'left' else right,
+                   'open_box_side': open_side})
 
 DATA_DIR.mkdir(exist_ok=True)
 data_file = DATA_DIR / f"{info['participant']}_{info['date']}.csv"
@@ -1005,11 +1016,13 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0,
     return stims
 
 
-def experimenter_screen(text, color=None, say=None, opened=False):
+def experimenter_screen(text, color=None, say=None, opened=False, animal=None):
     """Instruction screen for the experimenter; tap anywhere (except the (i)
     icon) to continue. `say` is the script text shown below the instruction
     while help is on. With `color`, a row of closed boxes in that colour is
-    shown; with `opened`, box OPEN_BOX is open, with an arrow pointing at it."""
+    shown; with `opened`, box OPEN_BOX is open, with an arrow pointing at it;
+    with `animal`, a picture of that animal above box OPEN_BOX (the animal
+    in that box)."""
     msg = visual.TextStim(win, text=text, height=0.034, color=EXP_COLOR,
                           italic=True, font=FONT, wrapWidth=2 * HALF_W * 0.85,
                           pos=(0, 0.4), anchorVert='top')
@@ -1018,6 +1031,14 @@ def experimenter_screen(text, color=None, say=None, opened=False):
                            italic=True, font=FONT, pos=(0, -0.44))
     boxes = (box_row(color, y=-0.33, n_open=int(opened), arrow=opened,
                      open_at=OPEN_BOX - 1) if color else [])
+    if animal and color:
+        # x of box OPEN_BOX in the row, as in box_row
+        width = min(N_BOXES * 0.1 + (N_BOXES - 1) * 0.02, 2 * HALF_W * 0.92)
+        w = width / (N_BOXES + (N_BOXES - 1) * 0.2)
+        x = (OPEN_BOX - 1 - (N_BOXES - 1) / 2) * 1.2 * w
+        # above the arrow, or (closed boxes) right above the box
+        y = -0.33 + w * 0.62 * 3.1 + 0.075 if opened else -0.21
+        boxes.append(load_image(STIM / 'animals' / f'{animal}.png', (x, y), 0.12))
     wait_release()
     while True:
         check_quit()
@@ -1794,13 +1815,11 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
     at the top; "What does the team think?" with both animals; "Why?" with
     two pictures (numeric version: the row of boxes with 2 and with 4 boxes
     open; quality version: eyes = they looked in the boxes, speaking head =
-    someone told them); a "doesn't know" button for each question; and a
-    toggle whether the child gave the reason themselves or after asking.
+    someone told them); and a "doesn't know" button for each question.
     The child points (or taps) and the experimenter taps; a second tap
     changes the answer. One step at a time: the question being asked is
     fully visible and the rest faded (CHECK_FADED_OPACITY); after the
-    belief the reason question becomes active, then the toggle and
-    Continue.
+    belief the reason question becomes active, then Continue.
     Returns the answers (keys as in CHECK_FIELDS)."""
     c = PLURALS[lang][claimed]
     if reason_set == 'numeric':
@@ -1849,9 +1868,6 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
                 (x, y_r, 0.1, 0.08))
     buttons = {'belief': Button(EXP['dont_know'], (0, y_b), color=EXP_BUTTON_COLOR),
                'reason': Button(EXP['dont_know'], (0, y_r - 0.105), color=EXP_BUTTON_COLOR)}
-    prompted_buttons = {'self': Button(EXP['said_self'], (-0.17, -0.31), color=EXP_BUTTON_COLOR),
-                        'prompted': Button(EXP['said_prompted'], (0.17, -0.31),
-                                           color=EXP_BUTTON_COLOR)}
     highlight = {(q, v): rounded_rect((2 * hb[2] + 0.02, 2 * hb[3] + 0.02), hb[:2],
                                       SELECTED_COLOR, radius=0.02)
                  for q in options for v, (_, hb) in options[q].items()}
@@ -1860,7 +1876,7 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
     done = Button(TXT['continue'], (0, -0.42))
     script = say_text(EXP['if_right_belief_say'].format(whose=whose, c=c) + '\n' + if_right,
                       (0, -0.455), height=0.019)
-    answer = {'belief': None, 'reason': None, 'prompted': ''}
+    answer = {'belief': None, 'reason': None}
     # One step at a time: the question being asked is fully visible, the
     # rest is faded. Questions not reached yet can't be tapped; an answered
     # one can be tapped again to change the answer.
@@ -1868,7 +1884,6 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
                    + [highlight[q, v] for v in options[q]]
                    + [stim for stims, _ in options[q].values() for stim in stims]
                 for q in options}
-    sections['end'] = list(prompted_buttons.values())
 
     def current_step():
         return next((q for q in ('belief', 'reason') if answer[q] is None), 'end')
@@ -1901,10 +1916,6 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
                         answer[q] = value
                 if buttons[q].contains((mx, my)):
                     answer[q] = 'dont_know'
-            if step == 'end':
-                for value, button in prompted_buttons.items():
-                    if button.contains((mx, my)):
-                        answer['prompted'] = '' if answer['prompted'] == value else value
             step = current_step()
             wait_release()
 
@@ -1923,9 +1934,6 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
                     stim.draw()
             buttons[q].color = SELECTED_COLOR if answer[q] == 'dont_know' else EXP_BUTTON_COLOR
             buttons[q].draw()
-        for value, button in prompted_buttons.items():
-            button.color = SELECTED_COLOR if answer['prompted'] == value else EXP_BUTTON_COLOR
-            button.draw()
         done.enabled = step == 'end'
         done.draw()
         draw_help(script)
@@ -1935,7 +1943,6 @@ def check_screen(team, whose, left, right, claimed, box, quality, attempt):
     reason_correct = answer['reason'] == right_reason
     return {'belief': answer['belief'], 'belief_correct': belief_correct,
             'reason': answer['reason'], 'reason_correct': reason_correct,
-            'reason_prompted': answer['prompted'],
             'passed': belief_correct and reason_correct, 'rt': round(rt, 3)}
 
 
@@ -2134,20 +2141,23 @@ for t in trials:
     names = {'pl_l': PLURALS[lang][left], 'pl_r': PLURALS[lang][right],
              'a_l': with_article(left), 'a_r': with_article(right),
              'l': animal_name(left).lower(), 'r': animal_name(right).lower(),
-             'the_l': the_animal(left), 'the_r': the_animal(right)}
+             'the_l': the_animal(left), 'the_r': the_animal(right),
+             'a_o': with_article(t['open_box_animal'])}
     first_round = t['trial'] == 1
     setup = 'setup_first' if first_round else 'setup'
     experimenter_screen(
         EXP[setup].format(t=t['trial'], n=len(trials), k=N_BOXES,
                           color=COLOR_ADJ_NL[box] if lang == 'nl' else box, **names),
-        color=BOX_DISPLAY[box], say=EXP[setup + '_say'].format(**names))
+        color=BOX_DISPLAY[box], say=EXP[setup + '_say'].format(**names),
+        animal=t['open_box_animal'])
 
     # Practice with the scale (first round only), then open the first box
-    open_say = EXP['open_box_say']
+    open_say = EXP['open_box_say'].format(**names)
     if first_round:
         session.update(slider_training(left, right, names))
         open_say = EXP['train_end_say'] + '\n' + open_say
-    experimenter_screen(EXP['open_box'], color=BOX_DISPLAY[box], say=open_say, opened=True)
+    experimenter_screen(EXP['open_box'].format(**names), color=BOX_DISPLAY[box],
+                        say=open_say, opened=True, animal=t['open_box_animal'])
 
     def header(step):
         return EXP['header'].format(t=t['trial'], n=len(trials), s=step,
@@ -2223,6 +2233,7 @@ for t in trials:
         'belief1_choice': choice,
         'belief1_choice_side': 'left' if choice == left else 'right',
         'belief1_choice_rt': round(rating1['choice_rt'], 3),
+        'belief1_choice_is_open_box_animal': choice == t['open_box_animal'],
         'video_team': video_team, 'claimed_animal': claimed,
         'video_file': vid.name,
         'video_missing': not vid.exists(), 'video_n_plays': n_plays,
