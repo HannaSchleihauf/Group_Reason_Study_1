@@ -1684,18 +1684,21 @@ def first_frame(path):
 
 
 def play_video(path):
-    """Video screen: title, the video in a rounded dark frame, and a play
-    symbol; tapping the video starts it. Afterwards 'Replay' plays it again
+    """Video screen: the video as large as the screen allows, at the top,
+    with a play symbol and the title below it; tapping the video starts it. Afterwards 'Replay' plays it again
     and 'Continue' goes on. Returns the number of times the video was played.
 
     Videos are decoded with ffpyplayer directly (PsychoPy's MovieStim stays
     blank with these files); the sound sets the pace, so picture and sound
     stay in sync. Key 's' skips the rest of the video.
     """
-    vid_w = min(1.15, 0.92 * 2 * HALF_W)
-    vid_h = vid_w * 9 / 16
-    vid_pos = (0, 0.02)
-    title = visual.TextStim(win, text=TXT['watch'], pos=(0, 0.42),
+    # as large as the screen allows (16:9) at the top; the title and later
+    # the buttons go in the strip below
+    vid_h = min(2 * HALF_W * 9 / 16, 0.76)
+    vid_w = vid_h * 16 / 9
+    vid_pos = (0, 0.5 - vid_h / 2)
+    y_below = -vid_h / 2
+    title = visual.TextStim(win, text=TXT['watch'], pos=(0, y_below),
                             height=42 * PX, color='#111111', bold=True, font=FONT)
     backdrop = rounded_rect((vid_w, vid_h), vid_pos, '#111111', radius=12 * PX)
     screen = visual.ImageStim(win, size=(vid_w, vid_h), pos=vid_pos,
@@ -1707,11 +1710,10 @@ def play_video(path):
                                  vertices=[(-0.018, -0.03), (-0.018, 0.03), (0.034, 0)])
     missing = visual.TextStim(win, text=f"{EXP['video_missing']}\n{path.name}",
                               pos=vid_pos, height=0.035, color='red', font=FONT)
-    y_buttons = vid_pos[1] - vid_h / 2 - 66 * PX
-    replay = Button(TXT['replay'], (-0.11, y_buttons), color='#616161')
-    cont = Button(TXT['continue'], (0.11, y_buttons))
+    replay = Button(TXT['replay'], (-0.11, y_below), color='#616161')
+    cont = Button(TXT['continue'], (0.11, y_below))
 
-    shown = {'frame': False}
+    shown = {'frame': False, 'title': True}
     if path.exists():
         poster = first_frame(path)
         if poster is not None:
@@ -1719,7 +1721,8 @@ def play_video(path):
             shown['frame'] = True
 
     def draw(*extra):
-        title.draw()
+        if shown['title']:
+            title.draw()
         backdrop.draw()
         if shown['frame']:
             screen.draw()
@@ -1737,6 +1740,7 @@ def play_video(path):
         draw(play_circle, play_icon)
         win.flip()
     wait_release()
+    shown['title'] = False
 
     n_plays = 0
     while True:
