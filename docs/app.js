@@ -539,23 +539,16 @@ function startForm() {
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
-// With color, a row of closed boxes; with opened, box OPEN_BOX is open, with an arrow;
-// with animal, a picture of that animal above box OPEN_BOX (the animal in that box).
-async function experimenterScreen(str, color = null, say = null, opened = false, animal = null) {
+// With color, a row of closed boxes; with opened, box OPEN_BOX is open, with an arrow.
+// top: a small grey line at the very top.
+async function experimenterScreen(str, color = null, say = null, opened = false, top = null) {
   clear();
   helpIcon();
   expText(str, 0, 0.4, {size: 0.034, anchor: 'top', width: 2 * HALF_W * 0.85});
   sayText(say, 0, 0.16);
   expText(EXP.tap, 0, -0.44, {size: 0.026});
   if (color) boxRow(color, {y: -0.33, nOpen: opened ? 1 : 0, arrow: opened, openAt: CFG.OPEN_BOX - 1});
-  if (color && animal) {
-    // x of box OPEN_BOX in the row, as in boxRow
-    const n = CFG.N_BOXES, width = Math.min(n * 0.1 + (n - 1) * 0.02, 2 * HALF_W * 0.92);
-    const w = width / (n + (n - 1) * 0.2);
-    // above the arrow, or (closed boxes) right above the box
-    const y = opened ? -0.33 + w * 0.62 * 3.1 + 0.075 : -0.21;
-    image(media.animal(animal), (CFG.OPEN_BOX - 1 - (n - 1) / 2) * 1.2 * w, y, 0.12);
-  }
+  if (top) expText(top, 0, 0.465, {size: 0.021});
   await released();
   const me = screenId;  // after going back, a tap no longer counts for this screen
   await new Promise(resolve => stage.addEventListener('pointerdown', function handler(event) {
@@ -1325,7 +1318,7 @@ async function main() {
                    a_l: withArticle(left), a_r: withArticle(right),
                    l: animalName(left).toLowerCase(), r: animalName(right).toLowerCase(),
                    the_l: theAnimal(left), the_r: theAnimal(right),
-                   a_o: withArticle(t.open_box_animal)};
+                   a_o: withArticle(t.open_box_animal), o: animalName(t.open_box_animal).toLowerCase()};
     const firstRound = t.trial === 1;
     const setup = firstRound ? 'setup_first' : 'setup';
     const header = s => fmt(EXP.header, {t: t.trial, n: trials.length, s,
@@ -1343,12 +1336,12 @@ async function main() {
     steps.push(() => experimenterScreen(
       fmt(EXP[setup], {t: t.trial, n: trials.length, k: CFG.N_BOXES,
                        color: lang === 'nl' ? CFG.COLOR_ADJ_NL[box] : box, ...names}),
-      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names), false, t.open_box_animal));
+      CFG.BOX_DISPLAY[box], fmt(EXP[`${setup}_say`], names)));
     // Practice with the scale (first round only), then open the box
     if (firstRound) steps.push(...practiceSteps(left, right, names));
     steps.push(() => experimenterScreen(fmt(EXP.open_box, names), CFG.BOX_DISPLAY[box],
                                         (firstRound ? `${EXP.train_end_say}\n` : '') + fmt(EXP.open_box_say, names),
-                                        true, t.open_box_animal));
+                                        true, fmt(EXP.open_box_top, names)));
 
     // Initial belief: binary choice, then how sure on the scale
     steps.push(async () => {

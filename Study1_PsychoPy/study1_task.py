@@ -355,9 +355,10 @@ EXP_TEXT = {
         'train_middle_say': '"Good, and if you didn\'t know, where would you place '
                             'your marker?"',
         'train_end_say': '"Okay great, I will bring the tablet back in a moment."',
-        'open_box': 'Put the tablet aside. Open the fifth box from the left (there is '
-                    '{a_o} in it), show the child the animal and close the box '
-                    'again.\nThen put the tablet in front of the child.',
+        'open_box': 'Put the tablet aside. Open the fifth box from the left, show the child the '
+                    'animal and close the box again.\nThen put the tablet in front of '
+                    'the child.',
+        'open_box_top': 'Fifth box: {o}',
         'open_box_say': '"I am going to open one box for you. Let\'s see what is in '
                         'it!" [open the box]\n"Look, there is {a_o} in this box!"',
         'ask_binary_say': '"Okay, so what do you think? Do you think there are more '
@@ -525,9 +526,10 @@ EXP_TEXT = {
         'train_middle_say': '"Goed zo, en als je het niet zou weten, waar zou je je '
                             'pijltje dan zetten?"',
         'train_end_say': '"Super, ik pak de tablet zo weer terug."',
-        'open_box': 'Leg de tablet aan de kant. Maak het vijfde doosje van links open '
-                    '(daar zit {a_o} in), laat het dier zien en doe het doosje weer '
-                    'dicht.\nLeg dan de tablet voor het kind neer.',
+        'open_box': 'Leg de tablet aan de kant. Maak het vijfde doosje van links open, '
+                    'laat het dier zien en doe het doosje weer dicht.\nLeg dan de '
+                    'tablet voor het kind neer.',
+        'open_box_top': 'Vijfde doosje: {o}',
         'open_box_say': '"Ik ga één doosje voor je openmaken. Eens kijken wat erin '
                         'zit!" [maak het doosje open]\n"Kijk, in dit doosje zit '
                         '{a_o}!"',
@@ -1016,13 +1018,12 @@ def box_row(color, n=N_BOXES, y=-0.2, n_open=1, arrow=True, width=None, x0=0.0,
     return stims
 
 
-def experimenter_screen(text, color=None, say=None, opened=False, animal=None):
+def experimenter_screen(text, color=None, say=None, opened=False, top=None):
     """Instruction screen for the experimenter; tap anywhere (except the (i)
     icon) to continue. `say` is the script text shown below the instruction
     while help is on. With `color`, a row of closed boxes in that colour is
-    shown; with `opened`, box OPEN_BOX is open, with an arrow pointing at it;
-    with `animal`, a picture of that animal above box OPEN_BOX (the animal
-    in that box)."""
+    shown; with `opened`, box OPEN_BOX is open, with an arrow pointing at it.
+    `top`: a small grey line at the very top."""
     msg = visual.TextStim(win, text=text, height=0.034, color=EXP_COLOR,
                           italic=True, font=FONT, wrapWidth=2 * HALF_W * 0.85,
                           pos=(0, 0.4), anchorVert='top')
@@ -1031,14 +1032,9 @@ def experimenter_screen(text, color=None, say=None, opened=False, animal=None):
                            italic=True, font=FONT, pos=(0, -0.44))
     boxes = (box_row(color, y=-0.33, n_open=int(opened), arrow=opened,
                      open_at=OPEN_BOX - 1) if color else [])
-    if animal and color:
-        # x of box OPEN_BOX in the row, as in box_row
-        width = min(N_BOXES * 0.1 + (N_BOXES - 1) * 0.02, 2 * HALF_W * 0.92)
-        w = width / (N_BOXES + (N_BOXES - 1) * 0.2)
-        x = (OPEN_BOX - 1 - (N_BOXES - 1) / 2) * 1.2 * w
-        # above the arrow, or (closed boxes) right above the box
-        y = -0.33 + w * 0.62 * 3.1 + 0.075 if opened else -0.21
-        boxes.append(load_image(STIM / 'animals' / f'{animal}.png', (x, y), 0.12))
+    if top:
+        boxes.append(visual.TextStim(win, text=top, height=0.021, color=EXP_COLOR,
+                                     italic=True, font=FONT, pos=(0, 0.465)))
     wait_release()
     while True:
         check_quit()
@@ -2142,14 +2138,14 @@ for t in trials:
              'a_l': with_article(left), 'a_r': with_article(right),
              'l': animal_name(left).lower(), 'r': animal_name(right).lower(),
              'the_l': the_animal(left), 'the_r': the_animal(right),
-             'a_o': with_article(t['open_box_animal'])}
+             'a_o': with_article(t['open_box_animal']),
+             'o': animal_name(t['open_box_animal']).lower()}
     first_round = t['trial'] == 1
     setup = 'setup_first' if first_round else 'setup'
     experimenter_screen(
         EXP[setup].format(t=t['trial'], n=len(trials), k=N_BOXES,
                           color=COLOR_ADJ_NL[box] if lang == 'nl' else box, **names),
-        color=BOX_DISPLAY[box], say=EXP[setup + '_say'].format(**names),
-        animal=t['open_box_animal'])
+        color=BOX_DISPLAY[box], say=EXP[setup + '_say'].format(**names))
 
     # Practice with the scale (first round only), then open the first box
     open_say = EXP['open_box_say'].format(**names)
@@ -2157,7 +2153,7 @@ for t in trials:
         session.update(slider_training(left, right, names))
         open_say = EXP['train_end_say'] + '\n' + open_say
     experimenter_screen(EXP['open_box'].format(**names), color=BOX_DISPLAY[box],
-                        say=open_say, opened=True, animal=t['open_box_animal'])
+                        say=open_say, opened=True, top=EXP['open_box_top'].format(**names))
 
     def header(step):
         return EXP['header'].format(t=t['trial'], n=len(trials), s=step,
